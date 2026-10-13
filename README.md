@@ -13,7 +13,6 @@
   <strong>Aplicativo PWA de musculação e constância fitness com estética cósmica/grega, inteligência artificial integrada, cronômetro de segundo plano, banco em nuvem e gamificação.</strong>
 </p>
 
-[Acesse a Aplicação Online](https://oraculo.joaopedroagtm.com) • [Meu Portfólio](https://joaopedroagtm.com)
 
 </div>
 
@@ -23,7 +22,7 @@
 
 O **Oráculo** é um aplicativo mobile-first desenvolvido para transformar a jornada de treinos e musculação em uma experiência imersiva e ritualística. Ele combina o acompanhamento técnico de cargas e descanso com um ecossistema gamificado e um assistente de inteligência artificial dedicado a tirar dúvidas e sugerir variações de exercícios em tempo real.
 
-O app opera tanto em **modo offline (Local-First via localStorage)** quanto conectado à nuvem via **Supabase**, garantindo que seus treinos nunca sejam perdidos mesmo sem sinal de internet na academia.
+O app opera tanto em **modo offline (Local-First via localStorage)** quanto online (fazendo um cadastro com banco de dados salvos no Supabase), garantindo que seus treinos nunca sejam perdidos mesmo sem sinal de internet na academia.
 
 ---
 
@@ -34,7 +33,7 @@ O app opera tanto em **modo offline (Local-First via localStorage)** quanto cone
 * **Ciclo Lunar Mensal:** O mês é dividido em 4 fases lunares dinâmicas (Semana I: *Fundação*, Semana II: *Sobrecarga Progressiva*, Semana III: *Pico de Intensidade*, Semana IV: *Consolidação*) com acompanhamento de metas semanais e orientações de coaching.
 * **Inspeção do Pilar Diário:** Status dinâmico em tempo real do treino de hoje vs. dias de descanso e repouso muscular.
 
-### 2. ⚡ Treino Ativo & Descanso Inteligente
+### 2. Treino Ativo & Descanso Inteligente
 * **Divisão de Treinos (Portais):**
   * **Portal Alpha:** Peito, Ombros & Tríceps
   * **Portal Beta:** Costas & Bíceps
@@ -72,9 +71,8 @@ O app opera tanto em **modo offline (Local-First via localStorage)** quanto cone
 | **Frontend Core** | HTML5 Semântico, CSS3 Moderno, JavaScript ES2023 | Arquitetura modular sem frameworks pesados, garantindo carregamento ultrarrápido |
 | **Build & Tooling** | [Vite 6](https://vitejs.dev/) | Bundler moderno com Hot Module Replacement (HMR) instantâneo |
 | **Backend & Banco** | [Supabase](https://supabase.com/) | Autenticação, banco de dados relacional PostgreSQL e armazenamento de perfil |
-| **Inteligência Artificial** | [Google Gemini 1.5](https://ai.google.dev/) | Geração de orientações táticas e substituições de exercícios |
+| **Inteligência Artificial** | [Google Gemini 3.1](https://ai.google.dev/) | Geração de orientações táticas e substituições de exercícios |
 | **Áudio Sintetizado** | Web Audio API | Sintetizador de ondas para feedback tátil sonoro de bipes e fanfarra |
-| **Animações & Efeitos** | Canvas Confetti & CSS 3D Transforms | Efeitos visuais imersivos e celebração de finalização de sessão |
 | **Hospedagem & Deploy** | [Vercel](https://vercel.com/) | Integração contínua (CI/CD) conectada ao GitHub com SSL automático |
 
 ---
