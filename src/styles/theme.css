@@ -1,0 +1,70 @@
+/* Variáveis do Sistema de Design: AGiTe-Me! • Noite Cósmica Ethereal & Liquid Glass */
+
+:root {
+  /* Fundo Escuro Noturno (Inspirado no céu do papel de parede do macOS) */
+  --space-void: #030508;
+  --space-deep: #060913;
+  --space-night: #0a0f1d;
+  --space-cosmic: #0e1526;
+  --space-surface: rgba(14, 20, 32, 0.72);
+  --space-card: rgba(18, 25, 40, 0.65);
+
+  /* Concreto, Cimento & Textura Mineral Brutalista */
+  --concrete-900: #0f121a;
+  --concrete-800: #171b26;
+  --concrete-700: #242a3b;
+  --concrete-600: #373f54;
+  --concrete-500: #55607a;
+  --concrete-400: #8892ad;
+  --concrete-300: #c2c9db;
+  --concrete-100: #f1f4fb;
+
+  /* Azul Noturno Elegante (Substituindo o ciano elétrico brilhante pelo azul da noite do print) */
+  --neon-cyan: #38bdf8;
+  --night-blue-dark: #0f1c31;
+  --night-blue-base: #1b2e4c;
+  --night-blue-elevated: #28426b;
+  --night-blue-light: #3d6096;
+  --night-blue-accent: #60a5fa;
+  --night-blue-glow: rgba(59, 130, 246, 0.28);
+  --btn-night-gradient: linear-gradient(135deg, #253d66 0%, #162640 100%);
+  --btn-night-hover: linear-gradient(135deg, #2e4c7e 0%, #1c3052 100%);
+
+  /* Rosa Bebê Bem Claro (Substituindo o rosa choque/magenta) */
+  --baby-pink: #fbcfe8;          /* Rosa bebê suave */
+  --baby-pink-light: #fdf2f8;    /* Rosa bebê quase branco */
+  --baby-pink-deep: #f472b6;     /* Rosa bebê acentuado */
+  --baby-pink-glow: rgba(251, 207, 232, 0.4);
+  --baby-pink-faint: rgba(251, 207, 232, 0.12);
+  --baby-pink-border: rgba(251, 207, 232, 0.25);
+
+  /* Rainbow / Furta-cor Animado para o Streak (Movimento contínuo entre azul e baby pink) */
+  --rainbow-gradient: linear-gradient(
+    115deg,
+    #38bdf8 0%,
+    #818cf8 25%,
+    #c084fc 50%,
+    #f472b6 75%,
+    #fbcfe8 100%
+  );
+
+  /* Lua Branca & Destaques de Luz */
+  --lunar-white: #ffffff;
+  --lunar-glow: rgba(255, 255, 255, 0.85);
+  --solar-gold: #fcd34d;
+
+  /* Tipografia: Apple SF Pro / Plus Jakarta Sans + Serrilhada Playfair Display */
+  --font-serif: 'Playfair Display', -apple-system-ui-serif, 'New York', Georgia, serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Plus Jakarta Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-hud: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Plus Jakarta Sans', sans-serif;
+
+  /* Bordas de Vidro Líquido & Sombras Mac */
+  --border-glass: 1px solid rgba(255, 255, 255, 0.1);
+  --border-glass-blue: 1px solid rgba(96, 165, 250, 0.3);
+  --border-glass-pink: 1px solid rgba(251, 207, 232, 0.35);
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-portal: 28px 28px 16px 16px;
+}

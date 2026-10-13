@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Oráculo: Templo de Treino</title>
+
+  <!-- PWA & Mobile Meta Tags -->
+  <meta name="theme-color" content="#060814" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="AGiTe-Me!" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/jpeg" href="./assets/app_icon.jpg" />
+  <link rel="apple-touch-icon" href="./assets/app_icon.jpg" />
+
+  <!-- Google Fonts: JetBrains Mono (ASCII Terminal), Playfair Display (Serrilhada) & Plus Jakarta Sans (Apple-like) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+
+  <link rel="stylesheet" href="./src/styles/app.css" />
+</head>
+
+<body>
+  <div id="app">
+    <!-- Papel de Parede Ethereal com Imagem Estática -->
+    <div class="app-wallpaper-layer"></div>
+    <div class="cosmos-bg-layer"></div>
+
+    <!-- Topo Celestial com Identidade Criativa, Mini-Timer, Fogo Branco & Hambúrguer -->
+    <header class="celestial-header">
+      <div class="brand-wrapper">
+        <!-- Foto de Perfil com Aura Cósmica do Guerreiro Ativo -->
+        <div class="avatar-aura-slot" id="header-avatar-slot" title="Toque para foto e perfil">
+          <div class="avatar-aura-ring" id="header-avatar-ring"></div>
+          <div class="avatar-photo-circle" id="header-avatar-circle">
+            <img id="header-avatar-img" src="./assets/app_icon.jpg" alt="Avatar" />
+            <span id="header-avatar-initials" class="avatar-initials-fallback" style="display: none;">JP</span>
+          </div>
+        </div>
+        <!-- Input oculto para carregar foto real do celular -->
+        <input type="file" id="header-avatar-file-input" accept="image/*" style="display: none;" />
+      </div>
+
+      <!-- Cronômetro Ativo no Topo (Dynamic Island / Live Activity Tátil) -->
+      <div class="header-live-timer" id="header-live-timer" style="display: none;"
+        title="Treino em andamento • Toque para abrir">
+        <span class="live-pulse-dot"></span>
+        <span class="live-timer-icon">⏱️</span>
+        <span class="live-timer-digits" id="header-timer-digits">00:00</span>
+      </div>
+
+      <div class="header-right-actions">
+        <!-- Botão de Streaks Translúcido com Borda Neon e Fogo Sagrado Branco -->
+        <div class="streak-pill-translucent" id="header-streak-pill" title="Sequência de Dias Consecutivos">
+          <svg class="white-flame-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M13.5 2c-.6 0-1.1.4-1.3 1-.7 2.3-2.5 4.3-4.2 5.8-1.5 1.4-2.5 3.3-2.5 5.5 0 4.1 3.4 7.5 7.5 7.5s7.5-3.4 7.5-7.5c0-4.5-3.2-8.5-5.7-11.3-.3-.7-.8-1-1.3-1zm-.5 18c-2.8 0-5-2.2-5-5 0-1.3.6-2.5 1.6-3.4 1.1-1 2.3-2.3 3.1-3.8.4 1.1 1.2 2 2.3 2.6.8.4 1.3 1.3 1.3 2.2 0 4.1-1.5 7.4-3.3 7.4z" />
+          </svg>
+          <span class="streak-count-num" id="header-streak-count">0</span>
+          <span class="streak-unit-label">DIAS</span>
+        </div>
+
+        <!-- Botão Hambúrguer Minimalista -->
+        <button class="header-hamburger-btn" id="btn-header-menu" aria-label="Abrir Menu do Templo">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Gaveta / Drawer do Menu Hambúrguer -->
+    <div class="drawer-overlay" id="drawer-overlay">
+      <aside class="drawer-panel" id="drawer-panel">
+        <div class="drawer-header">
+          <div class="drawer-brand-group">
+            <div class="drawer-brand-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--neon-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 9.5L12 4l10 5.5v1H2v-1z" />
+                <line x1="6" y1="11" x2="6" y2="18" />
+                <line x1="12" y1="11" x2="12" y2="18" />
+                <line x1="18" y1="11" x2="18" y2="18" />
+                <line x1="3" y1="18.5" x2="21" y2="18.5" />
+                <line x1="2" y1="21" x2="22" y2="21" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="drawer-title">Oráculo: agite-me!</h3>
+              <span class="drawer-subtitle" id="drawer-header-subtitle">Espaço pra focar no seu corpo, JP</span>
+            </div>
+          </div>
+          <button class="drawer-close-btn" id="btn-drawer-close" aria-label="Fechar Menu">✕</button>
+        </div>
+
+        <div class="drawer-profile-snippet" id="drawer-profile-snippet">
+          <!-- Renderizado dinamicamente com dados do perfil -->
+        </div>
+
+        <nav class="drawer-nav-list">
+          <button class="drawer-nav-item" data-drawer-tab="templo">
+            <div class="drawer-nav-icon-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 9.5L12 4l10 5.5v1H2v-1z" />
+                <line x1="6" y1="11" x2="6" y2="18" />
+                <line x1="12" y1="11" x2="12" y2="18" />
+                <line x1="18" y1="11" x2="18" y2="18" />
+                <line x1="3" y1="18.5" x2="21" y2="18.5" />
+                <line x1="2" y1="21" x2="22" y2="21" />
+              </svg>
+            </div>
+            <div class="nav-texts">
+              <strong>Templo</strong>
+              <small>Altar cósmico, lua e portal do dia</small>
+            </div>
+          </button>
+
+          <button class="drawer-nav-item" data-drawer-tab="treino">
+            <div class="drawer-nav-icon-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m6.5 6.5 11 11" />
+                <path d="m21 21-1-1" />
+                <path d="m3 3 1 1" />
+                <path d="m18 22 4-4" />
+                <path d="m2 6 4-4" />
+                <path d="m3 10 7-7" />
+                <path d="m14 21 7-7" />
+              </svg>
+            </div>
+            <div class="nav-texts">
+              <strong>Treino</strong>
+              <small>Cronômetro ativo, anatomia e cargas</small>
+            </div>
+          </button>
+
+          <button class="drawer-nav-item" data-drawer-tab="exercicios">
+            <div class="drawer-nav-icon-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="5" r="2" />
+                <path d="M12 7v6" />
+                <path d="m6 10 6 2 6-2" />
+                <path d="m8 20 4-7 4 7" />
+              </svg>
+            </div>
+            <div class="nav-texts">
+              <strong>Movimentos</strong>
+              <small>Biblioteca biomecânica e execuções</small>
+            </div>
+          </button>
+
+          <button class="drawer-nav-item" data-drawer-tab="historico">
+            <div class="drawer-nav-icon-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z" />
+              </svg>
+            </div>
+            <div class="nav-texts">
+              <strong>Streaks</strong>
+              <small>Sequência de constância e histórico</small>
+            </div>
+          </button>
+
+          <button class="drawer-nav-item" data-drawer-tab="oraculo">
+            <div class="drawer-nav-icon-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+                <path d="M5 3v4" />
+                <path d="M3 5h4" />
+                <path d="M19 17v4" />
+                <path d="M17 19h4" />
+              </svg>
+            </div>
+            <div class="nav-texts">
+              <strong>Oráculo</strong>
+              <small>Inteligência artificial & adaptação</small>
+            </div>
+          </button>
+        </nav>
+
+        <div class="drawer-footer-actions">
+          <div class="drawer-section-label">PORTABILIDADE & DEMO</div>
+          <button class="drawer-action-btn demo-highlight" id="drawer-btn-demo" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+            <span>Carregar Dados Demo</span>
+          </button>
+
+          <div class="drawer-backup-grid">
+            <button class="drawer-backup-btn" id="drawer-btn-export" type="button" title="Baixar arquivo JSON com todos os treinos">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span>Exportar JSON</span>
+            </button>
+            <button class="drawer-backup-btn" id="drawer-btn-import" type="button" title="Importar backup de treinos em JSON">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              <span>Importar JSON</span>
+            </button>
+          </div>
+
+          <div class="drawer-version-tag">
+            Oráculo: agite-me!• feito por <a href="https://joaopedroagtm.com" target="_blank" rel="noopener">joaopedroagtm.com</a>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Área de Conteúdo Dinâmico -->
+    <main class="app-content" id="app-content">
+      <!-- Renderizado dinamicamente pelo router do main.js -->
+    </main>
+
+    <!-- Bottom Dock Bar Tátil Mobile -->
+    <nav class="mobile-dock-nav" id="mobile-dock">
+      <button class="dock-item active" data-tab="templo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <!-- Templo Clássico Sagrado -->
+          <path d="M2 9.5L12 4l10 5.5v1H2v-1z" />
+          <line x1="6" y1="11" x2="6" y2="18" />
+          <line x1="12" y1="11" x2="12" y2="18" />
+          <line x1="18" y1="11" x2="18" y2="18" />
+          <line x1="3" y1="18.5" x2="21" y2="18.5" />
+          <line x1="2" y1="21" x2="22" y2="21" />
+        </svg>
+        <span>Templo</span>
+      </button>
+
+      <button class="dock-item" data-tab="treino">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <!-- Haltere / Dumbbell de Musculação -->
+          <path d="m6.5 6.5 11 11" />
+          <path d="m21 21-1-1" />
+          <path d="m3 3 1 1" />
+          <path d="m18 22 4-4" />
+          <path d="m2 6 4-4" />
+          <path d="m3 10 7-7" />
+          <path d="m14 21 7-7" />
+        </svg>
+        <span id="dock-treino-label">Treino</span>
+      </button>
+
+      <button class="dock-item" data-tab="exercicios">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <!-- Atleta / Biomecânica dos Movimentos -->
+          <circle cx="12" cy="5" r="2" />
+          <path d="M12 7v6" />
+          <path d="m6 10 6 2 6-2" />
+          <path d="m8 20 4-7 4 7" />
+        </svg>
+        <span>Movimentos</span>
+      </button>
+
+      <button class="dock-item" data-tab="historico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <!-- Fogo Sagrado de Constância / Streaks -->
+          <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z" />
+        </svg>
+        <span>Streaks</span>
+      </button>
+
+      <button class="dock-item" data-tab="oraculo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <!-- Centelha Cósmica do Oráculo / IA -->
+          <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+          <path d="M5 3v4" />
+          <path d="M3 5h4" />
+          <path d="M19 17v4" />
+          <path d="M17 19h4" />
+        </svg>
+        <span>Oráculo</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Modais Globais (Exercício, Onboarding, Checkout) serão montados via JavaScript -->
+  <div id="modal-container"></div>
+
+  <script type="module" src="./src/main.js"></script>
+  <script>
+    // Registro do Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch((err) => {
+          console.log('SW registration fallback:', err);
+        });
+      });
+    }
+  </script>
+</body>
+
+</html>
