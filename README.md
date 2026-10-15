@@ -110,26 +110,6 @@ agtm/
 └── supabase_schema.sql        # Script SQL das tabelas do Supabase
 ```
 
----
-
-
----
-
-## Como Instalar como Aplicativo (PWA)
-
-* **No iPhone (Safari):** Abra o endereço no Safari, toque no botão de **Compartilhar** (quadrado com seta para cima) e escolha **"Adicionar à Tela de Início"**.
-* **No Android (Chrome):** Abra o site no Chrome, toque no menu de 3 pontos verticais e selecione **"Instalar Aplicativo"** ou **"Adicionar à tela inicial"**.
-
----
-
-## Autor
-
-Desenvolvido com carinho e disciplina por **João Pedro**.
-
-* Portfólio: [joaopedroagtm.com](https://joaopedroagtm.com)
-* GitHub: [@joaopedro](https://github.com)
-
----
 
 <div align="center">
   <sub>"Constância no ferro, clareza no espírito." • Oráculo: agite-me!</sub>

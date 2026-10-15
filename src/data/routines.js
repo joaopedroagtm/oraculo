@@ -1,4 +1,4 @@
-// Fichas de Treino Inteligentes para Iniciantes • AGiTe-Me!
+// Fichas de Treino Inteligentes para Iniciantes (eu, rs)
 // Estrutura de Portais: Rotação automática e progressão constante.
 
 export const DEFAULT_ROUTINES = [
@@ -47,7 +47,9 @@ export const DEFAULT_ROUTINES = [
     exercises: [
       { exerciseId: 'leg-press-45', sets: 4, reps: '10 a 12', restSec: 90, defaultWeight: 80 },
       { exerciseId: 'cadeira-extensora', sets: 3, reps: '12 a 15', restSec: 60, defaultWeight: 25 },
-      { exerciseId: 'desenvolvimento-halteres', sets: 3, reps: '12', restSec: 60, defaultWeight: 8 },
+      { exerciseId: 'mesa-flexora-deitada', sets: 3, reps: '10 a 12', restSec: 60, defaultWeight: 25 },
+      { exerciseId: 'elevacao-pelvica-quadril', sets: 3, reps: '10 a 12', restSec: 60, defaultWeight: 20 },
+      { exerciseId: 'elevacao-panturrilha-pe', sets: 3, reps: '15', restSec: 45, defaultWeight: 10 },
       { exerciseId: 'prancha-abdominal', sets: 3, reps: '40 seg', restSec: 45, defaultWeight: 0 }
     ]
   }
@@ -56,7 +58,7 @@ export const DEFAULT_ROUTINES = [
 // Helper para selecionar o próximo treino com base no histórico
 export function getNextRoutine(completedRoutinesHistory) {
   if (!completedRoutinesHistory || completedRoutinesHistory.length === 0) {
-    return DEFAULT_ROUTINES[0]; // Primeiro treino: Portal Alpha
+    return DEFAULT_ROUTINES[0]; 
   }
 
   const lastRoutineId = completedRoutinesHistory[completedRoutinesHistory.length - 1].routineId;

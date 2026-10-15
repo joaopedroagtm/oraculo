@@ -1,4 +1,4 @@
-// Componente: Lua Etérea Interativa com Fase Astronômica Real • AGiTe-Me!
+// Componente: Lua Etérea Interativa com Fase Astronômica Real 
 // Renderiza a iluminação real calculada a partir do ciclo sinódico, movimento orbital e toque elástico.
 
 import { getAstronomicalMoonPhase } from '../utils/lunar.js';

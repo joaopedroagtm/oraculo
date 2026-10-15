@@ -1,18 +1,24 @@
 {
   "name": "AGiTe-Me! • Templo Fitness",
   "short_name": "AGiTe-Me!",
-  "description": "Aplicativo fitness etéreo para musculação com IA, cronômetro, streaks e guias de exercícios.",
+  "description": "Aplicativo fitness para musculação com IA, cronômetro, streaks e guias de exercícios.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#060814",
-  "theme_color": "#060814",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "./assets/app_icon.jpg",
+      "src": "./assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/icon-512.png",
       "sizes": "512x512",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]

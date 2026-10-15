@@ -1,4 +1,4 @@
-// Cronômetro de Sessão & Timer de Descanso com Vibração e Som • AGiTe-Me!
+// Cronômetro de Sessão & Timer de Descanso com Vibração e Som 
 
 import { sound } from '../services/audio.js';
 
@@ -113,7 +113,7 @@ export class RestTimerModal {
           <button class="rest-skip-btn" id="rest-skip-btn">Pular Descanso</button>
           <button class="rest-adj-btn" id="rest-add-15">+15s</button>
         </div>
-        <div class="rest-quote" id="rest-quote">“Respire fundo. O músculo se reconstrói no silêncio cósmico.”</div>
+        <div class="rest-quote" id="rest-quote">“Respire fundo. O músculo se reconstrói no silêncio e na calmaria..”</div>
       </div>
     `;
     document.body.appendChild(this.element);

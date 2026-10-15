@@ -1,5 +1,5 @@
-// Cliente Oficial & Sincronização Supabase • AGiTe-Me!
-// Suporte a multi-usuários (João Pedro & Marco), autenticação em nuvem e fotos com aura.
+// Cliente Oficial & Sincronização Supabase 
+// Suporte a multi-usuários e autenticação em nuvem.
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -63,7 +63,7 @@ export const SupabaseService = {
     });
   },
 
-  // Cadastro de Novo Guerreiro
+  // Cadastro de Novo User
   async signUp(email, password, metadata = {}) {
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -83,7 +83,7 @@ export const SupabaseService = {
     }
   },
 
-  // Login no Templo
+  // Login 
   async signIn(email, password) {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -118,7 +118,7 @@ export const SupabaseService = {
     }
   },
 
-  // Buscar Perfil do Guerreiro no Banco
+  // Buscar Perfil no Banco
   async getProfile(userId) {
     try {
       const { data, error } = await supabase

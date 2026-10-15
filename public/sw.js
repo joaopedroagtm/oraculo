@@ -1,11 +1,13 @@
-const CACHE_NAME = 'agite-me-v1';
+const CACHE_NAME = 'agite-me-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
+  './favicon.png',
+  './apple-touch-icon.png',
   './assets/app_icon.jpg',
-  './assets/portal_bg.jpg',
-  './images/bg.jpeg'
+  './assets/icon-192.png',
+  './assets/icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {

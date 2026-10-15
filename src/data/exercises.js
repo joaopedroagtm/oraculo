@@ -1,6 +1,6 @@
-// Catálogo de Exercícios Especializados para Iniciantes • AGiTe-Me!
-// Dados biomecânicos precisos com imagens reais de alta definição (Início & Contração),
-// links diretos para MuscleWiki e tutoriais em vídeo no YouTube.
+// Catálogo de Exercícios Especializados para Iniciantes   
+// Dados biomecânicos precisos com imagens reais de alta definição (Início & Contração, duas imagens que me mexem, tipo um .gif),
+// links diretos para MuscleWiki e tutoriais em vídeo no YouTube também.
 
 const BASE_IMG = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises';
 
@@ -304,6 +304,385 @@ export const EXERCISES = [
       'Prender a respiração durante o exercício.'
     ],
     goldTip: 'Puxe o seu umbigo em direção às costas como se fosse levar um soco na barriga.'
+  },
+  {
+    id: 'supino-inclinado-halteres',
+    name: 'Supino Inclinado com Halteres',
+    enName: 'Incline Dumbbell Press',
+    muscle: 'peito',
+    muscleLabel: 'Peitoral Superior',
+    equipment: 'Banco Inclinado (30° a 45°) + Halteres',
+    difficulty: 'Iniciante',
+    targetGroup: 'Peitoral Superior (Porção Clavicular), Deltoide Anterior e Tríceps',
+    frames: [
+      `${BASE_IMG}/Incline_Dumbbell_Press/0.jpg`,
+      `${BASE_IMG}/Incline_Dumbbell_Press/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/incline-dumbbell-bench-press',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+supino+inclinado+halteres+correto',
+    steps: [
+      'Ajuste o banco em uma inclinação suave de 30° a 45°.',
+      'Sente-se com as costas e a cabeça apoiadas, pés plantados no chão.',
+      'Empurre os halteres para cima partindo da altura do peito superior até a extensão quase completa.',
+      'Desça de maneira controlada sentindo o peitoral superior esticar sem jogar os cotovelos para trás.'
+    ],
+    mistakes: [
+      'Inclinar o banco alto demais (mais de 45° sobrecarrega os ombros e desativa o peito).',
+      'Despencar o peso rápido na descida.'
+    ],
+    goldTip: 'Mantenha os cotovelos a cerca de 60° em relação ao tronco para foco absoluto no feixe superior.'
+  },
+  {
+    id: 'crossover-polia',
+    name: 'Crucifixo / Crossover na Polia',
+    enName: 'Cable Crossover',
+    muscle: 'peito',
+    muscleLabel: 'Peitoral & Linha Medial',
+    equipment: 'Polia Dupla (Crossover)',
+    difficulty: 'Iniciante',
+    targetGroup: 'Peitoral Maior (Tensão Contínua)',
+    frames: [
+      `${BASE_IMG}/Cable_Crossover/0.jpg`,
+      `${BASE_IMG}/Cable_Crossover/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/cable-crossover',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+crossover+polia+peito',
+    steps: [
+      'Posicione as polias na altura dos ombros ou um pouco acima.',
+      'Dê um passo à frente com uma perna para criar base sólida e incline ligeiramente o tronco.',
+      'Com os braços quase retos (cotovelos destravados), puxe os cabos em um abraço até as mãos se aproximarem.',
+      'Retorne devagar sentindo o peito abrir e alongar sob a tensão dos cabos.'
+    ],
+    mistakes: [
+      'Dobrar demais os cotovelos transformando o movimento em um supino feio.',
+      'Dar tranco com a lombar para puxar o peso.'
+    ],
+    goldTip: 'Imagine que você está abraçando um barril gigante na sua frente e segure 1 segundo no pico de contração.'
+  },
+  {
+    id: 'remada-curvada-halteres',
+    name: 'Remada Curvada com Halteres',
+    enName: 'Bent-Over Dumbbell Row',
+    muscle: 'costas',
+    muscleLabel: 'Densidade Dorsal & Romboides',
+    equipment: 'Par de Halteres',
+    difficulty: 'Iniciante',
+    targetGroup: 'Grande Dorsal, Redondo Maior, Romboides e Eretor da Espinha',
+    frames: [
+      `${BASE_IMG}/Bent_Over_Two-Dumbbell_Row/0.jpg`,
+      `${BASE_IMG}/Bent_Over_Two-Dumbbell_Row/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/dumbbell-row',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+remada+curvada+com+halteres',
+    steps: [
+      'Fique em pé, pés na largura dos ombros, incline o tronco à frente a ~45° com a coluna perfeitamente neutra.',
+      'Segure os halteres com os braços soltos para baixo e peito aberto.',
+      'Puxe os halteres em direção aos quadris guiando o movimento pelos cotovelos.',
+      'Aperte as escápulas no topo e desça esticando as costas com total controle.'
+    ],
+    mistakes: [
+      'Curvar as costas como se fosse um gato assustado (arredondar a lombar).',
+      'Puxar com a força dos bíceps em vez das costas.'
+    ],
+    goldTip: 'Pense em colocar os cotovelos nos bolsos traseiros da sua bermuda.'
+  },
+  {
+    id: 'remada-unilateral-serrote',
+    name: 'Remada Unilateral com Haltere (Serrote)',
+    enName: 'One-Arm Dumbbell Row',
+    muscle: 'costas',
+    muscleLabel: 'Dorsais Unilateral',
+    equipment: 'Haltere + Banco Reto',
+    difficulty: 'Iniciante',
+    targetGroup: 'Grande Dorsal, Trapézio Médio e Romboides',
+    frames: [
+      `${BASE_IMG}/One-Arm_Dumbbell_Row/0.jpg`,
+      `${BASE_IMG}/One-Arm_Dumbbell_Row/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/dumbbell-row',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+remada+unilateral+serrote+correto',
+    steps: [
+      'Apoie o joelho e a mão do mesmo lado sobre um banco reto.',
+      'A outra perna fica firme no chão com o pé bem apoiado e o tronco paralelo ao solo.',
+      'Segure o haltere com a mão livre e puxe o peso em direção ao quadril sem girar a coluna.',
+      'Desça o peso alongando a asa das costas.'
+    ],
+    mistakes: [
+      'Torcer a coluna e jogar o ombro para cima no topo.',
+      'Puxar o peso reto para o peito em vez de puxar para o quadril.'
+    ],
+    goldTip: 'A coluna fica fixa e imóvel; apenas a escápula e o cotovelo trabalham na tração.'
+  },
+  {
+    id: 'agachamento-goblet',
+    name: 'Agachamento Goblet com Haltere',
+    enName: 'Goblet Squat',
+    muscle: 'pernas',
+    muscleLabel: 'Quadríceps & Glúteos',
+    equipment: 'Haltere ou Kettlebell',
+    difficulty: 'Iniciante',
+    targetGroup: 'Quadríceps, Glúteo Máximo e Core',
+    frames: [
+      `${BASE_IMG}/Goblet_Squat/0.jpg`,
+      `${BASE_IMG}/Goblet_Squat/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/dumbbell-goblet-squat',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+agachamento+goblet+com+haltere',
+    steps: [
+      'Fique em pé com os pés um pouco mais largos que os ombros, pontas dos pés levemente voltadas para fora.',
+      'Segure um haltere na vertical colado ao peito pelas duas mãos.',
+      'Desça agachando jogando o quadril para trás e joelhos apontados para fora.',
+      'Desça até as coxas ficarem paralelas ao chão mantendo o peito erguido, e suba empurrando os calcanhares.'
+    ],
+    mistakes: [
+      'Tirar os calcanhares do chão ao descer.',
+      'Deixar os joelhos caírem para dentro (valgo dinâmico).',
+      'Curvar o peito para frente.'
+    ],
+    goldTip: 'O haltere no peito funciona como contrapeso que ajuda naturalmente a manter a coluna ereta.'
+  },
+  {
+    id: 'mesa-flexora-deitada',
+    name: 'Mesa Flexora Deitada',
+    enName: 'Lying Leg Curls',
+    muscle: 'pernas',
+    muscleLabel: 'Posteriores de Coxa',
+    equipment: 'Máquina Mesa Flexora',
+    difficulty: 'Iniciante',
+    targetGroup: 'Isquiotibiais (Bíceps Femoral, Semitendíneo e Semimembranáceo)',
+    frames: [
+      `${BASE_IMG}/Lying_Leg_Curls/0.jpg`,
+      `${BASE_IMG}/Lying_Leg_Curls/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/machine-leg-curl',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+mesa+flexora+deitada',
+    steps: [
+      'Deite-se de bruços na máquina com o rolo de apoio posicionado logo atrás dos seus calcanhares/tendão de Aquiles.',
+      'Segure firme nas manoplas da máquina para não deixar o quadril subir do banco.',
+      'Flexione os joelhos puxando os calcanhares em direção aos glúteos de forma fluida.',
+      'Segure 1 segundo no topo e retorne descendo suavemente sem deixar os pesos baterem.'
+    ],
+    mistakes: [
+      'Levantar o bumbum do banco ao fazer força (arqueando a lombar).',
+      'Descer o peso de uma vez sem controle excêntrico.'
+    ],
+    goldTip: 'Cole o osso do quadril no banco e puxe apenas flexionando a parte de trás das coxas.'
+  },
+  {
+    id: 'elevacao-pelvica-quadril',
+    name: 'Elevação Pélvica / Hip Thrust',
+    enName: 'Barbell Hip Thrust',
+    muscle: 'pernas',
+    muscleLabel: 'Glúteos & Cadeia Posterior',
+    equipment: 'Banco + Barra ou Haltere no Quadril',
+    difficulty: 'Iniciante',
+    targetGroup: 'Glúteo Máximo, Isquiotibiais e Core',
+    frames: [
+      `${BASE_IMG}/Barbell_Hip_Thrust/0.jpg`,
+      `${BASE_IMG}/Barbell_Hip_Thrust/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/barbell-hip-thrust',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+elevacao+pelvica+hip+thrust',
+    steps: [
+      'Apoie a parte superior das costas (logo abaixo das escápulas) na borda de um banco estável.',
+      'Posicione os pés na largura dos ombros, firmes no chão, com os joelhos a 90° no ponto mais alto.',
+      'Apoie o haltere ou barra protegida sobre os ossos do quadril.',
+      'Empurre o chão com os calcanhares e erga o quadril até alinhar coxa e tronco, contraindo os glúteos no máximo.'
+    ],
+    mistakes: [
+      'Hiperextender a coluna lombar no topo em vez de contrair os glúteos.',
+      'Olhar para o teto (mantenha o queixo levemente apontado para o peito).'
+    ],
+    goldTip: 'Aperte os glúteos com força no topo por 2 segundos como se estivesse segurando uma moeda entre eles.'
+  },
+  {
+    id: 'elevacao-panturrilha-pe',
+    name: 'Elevação de Panturrilha em Pé',
+    enName: 'Standing Calf Raise',
+    muscle: 'pernas',
+    muscleLabel: 'Panturrilhas',
+    equipment: 'Step / Degrau + Halteres ou Peso Corporal',
+    difficulty: 'Iniciante',
+    targetGroup: 'Gastrocnêmio e Sóleo',
+    frames: [
+      `${BASE_IMG}/Standing_Dumbbell_Calf_Raise/0.jpg`,
+      `${BASE_IMG}/Standing_Dumbbell_Calf_Raise/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/dumbbell-calf-raise',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+panturrilha+em+pe+correto',
+    steps: [
+      'Apoie as pontas dos pés na borda de um degrau ou step, deixando os calcanhares livres para descer.',
+      'Segure um haltere na mão ou apoie-se em uma parede para equilíbrio.',
+      'Desça os calcanhares o máximo que conseguir sentindo a panturrilha esticar completamente.',
+      'Suba na ponta dos pés com explosão máxima e segure 1 segundo na contração máxima.'
+    ],
+    mistakes: [
+      'Ficar quicando rapidamente feito mola sem amplitude real.',
+      'Dobrar os joelhos durante a subida.'
+    ],
+    goldTip: 'O segredo da panturrilha é a amplitude: desça até o fundo e suba até a ponta máxima do dedão.'
+  },
+  {
+    id: 'desenvolvimento-arnold',
+    name: 'Desenvolvimento Arnold com Halteres',
+    enName: 'Arnold Dumbbell Press',
+    muscle: 'ombros',
+    muscleLabel: 'Deltoides Completo com Rotação',
+    equipment: 'Par de Halteres + Banco com Encosto',
+    difficulty: 'Iniciante',
+    targetGroup: 'Deltoide Anterior, Lateral e Posterior',
+    frames: [
+      `${BASE_IMG}/Arnold_Dumbbell_Press/0.jpg`,
+      `${BASE_IMG}/Arnold_Dumbbell_Press/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/dumbbell-arnold-press',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+desenvolvimento+arnold+press',
+    steps: [
+      'Sente-se no banco com halteres na altura do peito, palmas das mãos voltadas para você (como na rosca bíceps).',
+      'Inicie a subida girando os pulsos para fora enquanto empurra os halteres para cima.',
+      'No topo, as palmas terminam voltadas para a frente.',
+      'Desça invertendo a rotação de forma contínua até a posição inicial.'
+    ],
+    mistakes: [
+      'Girar de forma brusca e descoordenada.',
+      'Usar peso excessivo e perder a estabilidade do punho.'
+    ],
+    goldTip: 'A rotação suave ativa todas as três cabeças do deltoide de forma fluida e anatômica.'
+  },
+  {
+    id: 'face-pull-polia',
+    name: 'Face Pull na Polia com Corda',
+    enName: 'Face Pull',
+    muscle: 'ombros',
+    muscleLabel: 'Deltoide Posterior & Manguito',
+    equipment: 'Polia Alta + Acessório Corda',
+    difficulty: 'Iniciante',
+    targetGroup: 'Deltoide Posterior, Trapézio Médio e Romboides (Saúde dos Ombros)',
+    frames: [
+      `${BASE_IMG}/Face_Pull/0.jpg`,
+      `${BASE_IMG}/Face_Pull/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/cable-face-pull',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+face+pull+na+polia',
+    steps: [
+      'Ajuste a polia na altura dos olhos ou do peito e encaixe a corda.',
+      'Dê um passo atrás, estique os braços com pegada pronada ou neutra na ponta da corda.',
+      'Puxe a corda em direção ao seu rosto (altura do nariz/testa), separando as pontas da corda.',
+      'Os cotovelos devem terminar altos e apontados para trás, em rotação externa.'
+    ],
+    mistakes: [
+      'Puxar para a barriga em vez do rosto.',
+      'Deixar os cotovelos caírem para baixo.'
+    ],
+    goldTip: 'Excelente para postura e prevenção de dores no ombro causadas pelo supino.'
+  },
+  {
+    id: 'rosca-martelo-halteres',
+    name: 'Rosca Martelo com Halteres',
+    enName: 'Dumbbell Hammer Curl',
+    muscle: 'biceps',
+    muscleLabel: 'Braquial & Antebraço',
+    equipment: 'Par de Halteres',
+    difficulty: 'Iniciante',
+    targetGroup: 'Braquial, Bíceps Braquial e Braquiorradial (Grossura do Braço)',
+    frames: [
+      `${BASE_IMG}/Hammer_Curls/0.jpg`,
+      `${BASE_IMG}/Hammer_Curls/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/dumbbell-hammer-curl',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+rosca+martelo+com+halteres',
+    steps: [
+      'Fique em pé com os pés na largura dos ombros, segurando os halteres com as palmas voltadas uma para a outra (pegada neutra).',
+      'Mantenha os cotovelos travados na lateral do corpo.',
+      'Erga os halteres sem girar os punhos até a contração total dos braços.',
+      'Desça devagar resistindo à gravidade.'
+    ],
+    mistakes: [
+      'Jogar os cotovelos para frente para facilitar a subida.',
+      'Balançar o corpo para levantar o peso.'
+    ],
+    goldTip: 'A pegada neutra desenvolve o músculo braquial, que "empurra" o bíceps para fora fazendo o braço parecer mais grosso.'
+  },
+  {
+    id: 'triceps-corda-frances',
+    name: 'Tríceps Francês na Polia com Corda',
+    enName: 'Cable Rope Overhead Triceps Extension',
+    muscle: 'triceps',
+    muscleLabel: 'Tríceps Cabeça Longa',
+    equipment: 'Polia Baixa ou Média + Corda',
+    difficulty: 'Iniciante',
+    targetGroup: 'Tríceps Braquial (Cabeça Longa em Alongamento Máximo)',
+    frames: [
+      `${BASE_IMG}/Cable_Rope_Overhead_Triceps_Extension/0.jpg`,
+      `${BASE_IMG}/Cable_Rope_Overhead_Triceps_Extension/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/cable-overhead-triceps-extension',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+triceps+frances+na+polia',
+    steps: [
+      'Posicione a polia baixa ou na altura da cintura, segure a corda e fique de costas para o aparelho.',
+      'Dê um passo à frente para criar base estável e erga os braços acima da cabeça com os cotovelos apontados para o teto.',
+      'Estenda os cotovelos levando as mãos para frente e para cima.',
+      'Flexione os cotovelos descendo a corda atrás da cabeça até sentir o tríceps alongar intensamente.'
+    ],
+    mistakes: [
+      'Abrir os cotovelos excessivamente para as laterais.',
+      'Arquear a lombar com carga muito pesada.'
+    ],
+    goldTip: 'Manter os braços erguidos acima da cabeça ativa a cabeça longa do tríceps como nenhum outro movimento.'
+  },
+  {
+    id: 'elevacao-pernas-solo',
+    name: 'Elevação de Pernas no Solo / Infra',
+    enName: 'Lying Leg Raise',
+    muscle: 'abdomen',
+    muscleLabel: 'Abdômen Infra',
+    equipment: 'Colchonete',
+    difficulty: 'Iniciante',
+    targetGroup: 'Reto Abdominal (Porção Inferior) e Flexores de Quadril',
+    frames: [
+      `${BASE_IMG}/Flat_Bench_Lying_Leg_Raise/0.jpg`,
+      `${BASE_IMG}/Flat_Bench_Lying_Leg_Raise/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/lying-leg-raise',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+elevacao+de+pernas+abdominal+infra',
+    steps: [
+      'Deite-se de costas no colchonete com os braços ao lado do corpo ou mãos sob os glúteos para suporte lombar.',
+      'Mantenha as pernas juntas e estendidas (ou joelhos levemente destravados).',
+      'Erga as pernas até formar 90° com o chão soltando o ar e contraindo o abdômen.',
+      'Desça as pernas devagar sem tocar os calcanhares no chão e sem deixar a lombar arquear.'
+    ],
+    mistakes: [
+      'Tirar a lombar do chão ao descer as pernas.',
+      'Jogar as pernas com impulso sem controle abdominal.'
+    ],
+    goldTip: 'Pressione as costas firmemente contra o colchonete durante todo o trajeto de descida.'
+  },
+  {
+    id: 'abdominal-infra-crunch',
+    name: 'Abdominal Crunch na Polia Alta',
+    enName: 'Cable Crunch',
+    muscle: 'abdomen',
+    muscleLabel: 'Reto Abdominal com Sobrecarga',
+    equipment: 'Polia Alta + Corda',
+    difficulty: 'Iniciante',
+    targetGroup: 'Reto Abdominal Superior e Médio',
+    frames: [
+      `${BASE_IMG}/Cable_Crunch/0.jpg`,
+      `${BASE_IMG}/Cable_Crunch/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/cable-crunch',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+abdominal+crunch+na+polia',
+    steps: [
+      'Ajoelhe-se em frente à polia alta segurando a corda com as mãos ao lado da cabeça/orelhas.',
+      'Fixe os quadris e incline o tronco ligeiramente à frente.',
+      'Enrole a coluna trazendo os cotovelos em direção aos joelhos soltando todo o ar.',
+      'Retorne esticando o abdômen sem mexer os quadris.'
+    ],
+    mistakes: [
+      'Sentar nos calcanhares ao descer (movendo o quadril em vez de enrolar a barriga).',
+      'Puxar com a força dos braços.'
+    ],
+    goldTip: 'Pense em aproximar as suas costelas dos ossos da sua bacia; o movimento vem puramente da flexão da coluna.'
   }
 ];
 

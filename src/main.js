@@ -1,6 +1,5 @@
-// Controlador Principal • AGiTe-Me! (agtm!)
-// Estética Etérea 90s, Greco-Alien, Minimalista & Mobile-First
-
+// Controlador Principal •
+// Estética 
 import confetti from 'canvas-confetti';
 import { EXERCISES, MUSCLE_GROUPS } from './data/exercises.js';
 import { DEFAULT_ROUTINES, getNextRoutine } from './data/routines.js';
@@ -13,6 +12,8 @@ import { WorkoutHeatmap } from './components/heatmap.js';
 import { WorkoutStopwatch, RestTimerModal } from './components/timer.js';
 import { getAstronomicalMoonPhase } from './utils/lunar.js';
 import { CosmicAnatomyHologram } from './components/anatomy.js';
+import { initPixelStars } from './components/pixelStars.js';
+import { SplashService, ONBOARDING_SVGS } from './components/splashOnboarding.js';
 
 function hslToHex(h, s, l) {
   l /= 100;
@@ -49,7 +50,7 @@ function hexToHsl(hex) {
 
 class AgiteMeApp {
   constructor() {
-    this.currentTab = 'templo';
+    this.currentTab = 'treino';
     if (localStorage.getItem('agtm_active_slug') === 'marco') {
       StorageService.switchUser('joao');
     }
@@ -64,7 +65,142 @@ class AgiteMeApp {
     this.init();
   }
 
+  showCosmicModalAlert({ title = 'ORÁCULO NOTIFICA', message, type = 'success', onConfirm = null }) {
+    // Remove qualquer outro alert ativo para evitar duplicidade
+    document.querySelectorAll('.cosmic-alert-overlay').forEach(el => el.remove());
+
+    const overlay = document.createElement('div');
+    overlay.className = 'cosmic-alert-overlay';
+    overlay.id = 'cosmic-alert-overlay';
+
+    let iconSvg = '';
+    if (type === 'warning') {
+      iconSvg = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+    } else if (type === 'error') {
+      iconSvg = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+    } else {
+      iconSvg = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+    }
+
+    overlay.innerHTML = `
+      <div class="cosmic-alert-card">
+        <div class="cosmic-alert-glow"></div>
+        <div class="cosmic-alert-icon-ring ${type}">
+          ${iconSvg}
+        </div>
+        <div class="cosmic-alert-title">${title}</div>
+        <div class="cosmic-alert-message">${message}</div>
+        <button type="button" class="cosmic-alert-btn" id="cosmic-alert-btn">
+          <span>ENTENDIDO</span>
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    sound.playTapSound();
+    if ('vibrate' in navigator) navigator.vibrate(25);
+
+    const closeAlert = () => {
+      overlay.style.animation = 'cosmic-alert-fade-in 0.15s ease-in reverse forwards';
+      setTimeout(() => {
+        overlay.remove();
+        if (onConfirm) onConfirm();
+      }, 150);
+    };
+
+    overlay.querySelector('#cosmic-alert-btn')?.addEventListener('click', closeAlert);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeAlert();
+    });
+
+    // Auto-fechamento suave após 3.5 segundos
+    setTimeout(() => {
+      if (document.body.contains(overlay)) closeAlert();
+    }, 3500);
+  }
+
+  showCosmicConfirm({ title = 'CONFIRMAÇÃO', message, confirmText = 'Confirmar', cancelText = 'Cancelar', isDestructive = false }) {
+    return new Promise((resolve) => {
+      document.querySelectorAll('.cosmic-confirm-overlay').forEach(el => el.remove());
+
+      const overlay = document.createElement('div');
+      overlay.className = 'cosmic-confirm-overlay';
+
+      const iconSvg = isDestructive
+        ? `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`
+        : `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+
+      overlay.innerHTML = `
+        <div class="cosmic-confirm-card">
+          <div class="cosmic-confirm-glow ${isDestructive ? 'destructive' : ''}"></div>
+          <div class="cosmic-confirm-icon-ring ${isDestructive ? 'destructive' : ''}">
+            ${iconSvg}
+          </div>
+          <div class="cosmic-confirm-title">${title}</div>
+          <div class="cosmic-confirm-message">${message}</div>
+          <div class="cosmic-confirm-actions">
+            <button type="button" class="btn-cosmic-cancel" id="btn-confirm-cancel">
+              ${cancelText}
+            </button>
+            <button type="button" class="btn-cosmic-confirm ${isDestructive ? 'destructive' : ''}" id="btn-confirm-ok">
+              ${confirmText}
+            </button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+      sound.playTapSound();
+      if ('vibrate' in navigator) navigator.vibrate(20);
+
+      const finish = (result) => {
+        overlay.style.animation = 'cosmic-alert-fade-in 0.15s ease-in reverse forwards';
+        setTimeout(() => {
+          overlay.remove();
+          resolve(result);
+        }, 150);
+      };
+
+      overlay.querySelector('#btn-confirm-cancel')?.addEventListener('click', () => {
+        sound.playTapSound();
+        finish(false);
+      });
+
+      overlay.querySelector('#btn-confirm-ok')?.addEventListener('click', () => {
+        sound.playTapSound();
+        finish(true);
+      });
+
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) finish(false);
+      });
+    });
+  }
+
   init() {
+    // Intercepta window.alert para transformar em modal interno moderno no centro da tela
+    window.alert = (msg) => {
+      let type = 'success';
+      let title = 'ORÁCULO NOTIFICA';
+      if (typeof msg === 'string') {
+        const lower = msg.toLowerCase();
+        if (lower.includes('erro') || lower.includes('não foi possível') || lower.includes('inválido')) {
+          type = 'error';
+          title = 'ATENÇÃO';
+        } else if (lower.includes('foto') || lower.includes('aura')) {
+          title = 'AURA ATUALIZADA';
+          type = 'success';
+        } else if (lower.includes('sucesso') || lower.includes('bem-vindo')) {
+          title = 'SANTUÁRIO SINCRONIZADO';
+          type = 'success';
+        } else if (lower.includes('saiu')) {
+          title = 'DESCONECTADO';
+          type = 'warning';
+        }
+      }
+      this.showCosmicModalAlert({ title, message: msg, type });
+    };
+
     this.setupStopwatch();
     this.bindNavigation();
     this.setupDrawerMenu();
@@ -74,17 +210,21 @@ class AgiteMeApp {
     this.initSupabaseAuth();
     this.updateHeaderStreak();
 
-    // Se usuário nunca preencheu perfil, abre onboarding
-    if (!this.profile.isOnboarded) {
-      this.openOnboardingModal();
-    }
+    // Exibe Splash Screen
+    SplashService.show({
+      onFinish: () => {
+        if (!this.profile.isOnboarded) {
+          this.openAppleOnboarding(0);
+        }
+      }
+    });
 
     this.renderCurrentTab();
   }
 
   setupStopwatch() {
     this.stopwatch = new WorkoutStopwatch((formattedTime, elapsedSeconds) => {
-      // Atualiza mostradores de cronômetro no DOM se existirem
+      // Atualiza mostradores de cronômetro
       const timerDisplay = document.querySelector('#active-timer-display');
       if (timerDisplay) {
         timerDisplay.textContent = formattedTime;
@@ -167,7 +307,7 @@ class AgiteMeApp {
         this.renderOraculoView(content);
         break;
       default:
-        this.renderTemploView(content);
+        this.renderTreinoView(content);
     }
   }
 
@@ -200,7 +340,7 @@ class AgiteMeApp {
         sound.playTapSound();
         if ('vibrate' in navigator) navigator.vibrate([40, 30, 60]);
 
-        // Feedback de animação de explosão de chamas celestiais
+        // Feedback de animação
         streakPill.classList.add('streak-flare-pop');
         setTimeout(() => streakPill.classList.remove('streak-flare-pop'), 600);
 
@@ -229,12 +369,18 @@ class AgiteMeApp {
     } else {
       if (img) img.style.display = 'none';
       if (initialsEl) {
-        const parts = (this.profile.name || 'Guerreiro').trim().split(/\s+/);
-        const initials = parts.length > 1
-          ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-          : (parts[0][0] || 'G').toUpperCase();
-        initialsEl.textContent = initials;
-        initialsEl.style.display = 'block';
+        const rawName = (this.profile && this.profile.name) ? this.profile.name.trim() : '';
+        if (!rawName) {
+          initialsEl.textContent = '?';
+          initialsEl.style.display = 'block';
+        } else {
+          const parts = rawName.split(/\s+/);
+          const initials = parts.length > 1
+            ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+            : parts[0][0].toUpperCase();
+          initialsEl.textContent = initials;
+          initialsEl.style.display = 'block';
+        }
       }
     }
 
@@ -246,7 +392,7 @@ class AgiteMeApp {
     if (subtitleEl) {
       const p = this.profile || StorageService.getProfile();
       const rawName = (p && p.name) ? p.name.trim() : '';
-      const firstName = rawName ? rawName.split(/\s+/)[0] : 'você';
+      const firstName = rawName ? rawName.split(/\s+/)[0] : 'Guerreiro';
       subtitleEl.textContent = `Espaço pra focar no seu corpo, ${firstName}`;
     }
   }
@@ -282,10 +428,18 @@ class AgiteMeApp {
           this.updateHeaderAvatar();
           this.renderCurrentTab();
           sound.playCheckSound();
-          alert('Foto do guerreiro atualizada com aura cósmica!');
+          this.showCosmicModalAlert({
+            title: 'FOTO ATUALIZADA',
+            message: 'Foto do guerreiro atualizada com aura cósmica!',
+            type: 'success'
+          });
         } catch (err) {
           console.error('Erro ao processar foto:', err);
-          alert('Não foi possível carregar a imagem. Tente outra foto da sua galeria.');
+          this.showCosmicModalAlert({
+            title: 'ERRO NA IMAGEM',
+            message: 'Não foi possível carregar a imagem. Tente outra foto da sua galeria.',
+            type: 'error'
+          });
         } finally {
           fileInput.value = '';
         }
@@ -326,7 +480,7 @@ class AgiteMeApp {
     const overlay = document.querySelector('#drawer-overlay');
     const btnClose = document.querySelector('#btn-drawer-close');
     const profileSnippet = document.querySelector('#drawer-profile-snippet');
-    const btnDemo = document.querySelector('#drawer-btn-demo');
+    const btnLogout = document.querySelector('#drawer-btn-logout');
     const btnExport = document.querySelector('#drawer-btn-export');
     const btnImport = document.querySelector('#drawer-btn-import');
 
@@ -344,12 +498,12 @@ class AgiteMeApp {
               <div style="position: absolute; inset: -2px; border-radius: 50%; background: ${aura}; filter: blur(4px); opacity: 0.7;"></div>
               <div style="position: relative; width: 38px; height: 38px; border-radius: 50%; overflow: hidden; background: #0f172a; border: 1.5px solid ${aura}; display: flex; align-items: center; justify-content: center;">
                 ${profile.avatarUrl
-            ? `<img src="${profile.avatarUrl}" alt="${profile.name}" style="width: 100%; height: 100%; object-fit: cover;" />`
-            : `<span style="font-family: var(--font-hud); font-size: 0.95rem; color: #fff; font-weight: 700;">${(profile.name || 'G')[0].toUpperCase()}</span>`}
+            ? `<img src="${profile.avatarUrl}" alt="${profile.name || 'Avatar'}" style="width: 100%; height: 100%; object-fit: cover;" />`
+            : `<span style="font-family: var(--font-hud); font-size: 0.95rem; color: #fff; font-weight: 700;">${(profile.name && profile.name.trim()) ? profile.name.trim()[0].toUpperCase() : '?'}</span>`}
               </div>
             </div>
             <div class="drawer-user-meta" style="flex: 1; min-width: 0;">
-              <div class="drawer-user-name">${profile.name || 'Guerreiro Cósmico'}</div>
+              <div class="drawer-user-name">${(profile.name && profile.name.trim()) ? profile.name : 'Guerreiro (Sem nome)'}</div>
               <div class="drawer-user-stats" style="display: flex; align-items: center; gap: 6px;">
                 <span style="color: #ffffff; display: inline-flex; align-items: center; gap: 3px;">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f472b6" stroke-width="2.5"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z"/></svg>
@@ -396,16 +550,51 @@ class AgiteMeApp {
       });
     });
 
+    const btnDemo = document.querySelector('#drawer-btn-demo');
     if (btnDemo) {
-      btnDemo.addEventListener('click', () => {
-        if (confirm('Carregar histórico de treinos simulados para demonstrar streaks e gráficos?')) {
+      btnDemo.addEventListener('click', async () => {
+        const ok = await this.showCosmicConfirm({
+          title: 'CARREGAR DEMO',
+          message: 'Deseja carregar histórico de treinos simulados para testar streaks e gráficos?',
+          confirmText: 'Carregar Demo',
+          cancelText: 'Cancelar'
+        });
+        if (ok) {
           StorageService.loadDemoData();
           closeDrawer();
           this.profile = StorageService.getProfile();
           this.updateHeaderStreak();
           this.updateHeaderAvatar();
           this.renderCurrentTab();
-          alert('Demonstração carregada com sucesso!');
+          this.showCosmicModalAlert({
+            title: 'DEMONSTRAÇÃO CARREGADA',
+            message: 'Histórico e metas de teste foram injetados com sucesso!',
+            type: 'success'
+          });
+        }
+      });
+    }
+
+    if (btnLogout) {
+      btnLogout.addEventListener('click', async () => {
+        closeDrawer();
+        const ok = await this.showCosmicConfirm({
+          title: 'DESLOGAR DO TEMPLO',
+          message: 'Deseja realmente sair da sua conta e retornar à tela inicial de onboarding?',
+          confirmText: 'Sim, Deslogar',
+          cancelText: 'Permanecer',
+          isDestructive: true
+        });
+        if (ok) {
+          if (this.supabaseUser) {
+            await SupabaseService.signOut();
+          }
+          this.profile.isOnboarded = false;
+          this.profile.name = '';
+          StorageService.saveProfile(this.profile);
+          this.supabaseUser = null;
+          this.updateHeaderAvatar();
+          this.openAppleOnboarding(0);
         }
       });
     }
@@ -432,10 +621,18 @@ class AgiteMeApp {
                 this.profile = StorageService.getProfile();
                 this.updateHeaderStreak();
                 this.updateHeaderAvatar();
-                alert('Dados importados com sucesso!');
+                this.showCosmicModalAlert({
+                  title: 'DADOS IMPORTADOS',
+                  message: 'Backup restaurado com sucesso! Seus treinos e histórico estão ativos.',
+                  type: 'success'
+                });
                 this.switchTab('templo');
               } else {
-                alert('Arquivo de backup inválido.');
+                this.showCosmicModalAlert({
+                  title: 'ARQUIVO INVÁLIDO',
+                  message: 'O arquivo JSON selecionado não contém um formato de backup válido.',
+                  type: 'error'
+                });
               }
             };
             reader.readAsText(file);
@@ -448,125 +645,376 @@ class AgiteMeApp {
   }
 
   // ==========================================
-  // VIEW 1: TEMPLO (HOME)
+  // VIEW 5: TEMPLO (& PERFIL)
   // ==========================================
   renderTemploView(container) {
+    const p = this.profile || StorageService.getProfile();
     const stats = StorageService.getStats();
     const history = StorageService.getHistory();
-    const nextRoutine = getNextRoutine(history);
-    const hasActiveWorkout = !!this.activeSession;
-    const lunar = getAstronomicalMoonPhase(new Date());
+    const isBioConfigured = Boolean(p.hasConfiguredBio);
+    const weightDisplay = (isBioConfigured && p.weight) ? `${p.weight} kg` : '-- kg';
+    const heightDisplay = (isBioConfigured && p.height) ? `${p.height} cm` : '-- cm';
+    const imc = (isBioConfigured && p.weight && p.height) ? (p.weight / ((p.height / 100) * (p.height / 100))).toFixed(1) : '--';
+    const goalFreqText = (isBioConfigured && p.goal)
+      ? `${p.goal.toUpperCase()} • ${p.frequency || 4}x / SEMANA`
+      : 'Métricas pendentes';
+
+    // Cálculo de Patente Cósmica / Gamificação
+    let rankLevel = 1;
+    let rankTitle = 'Iniciado';
+    let rankBadgeColor = '#38bdf8';
+    let rankBadgeSVG = `
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 6px rgba(56,189,248,0.7));">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(56,189,248,0.15)"/>
+        <path d="M12 8v8"/>
+        <path d="M8 12h8"/>
+      </svg>
+    `;
+    let rankProgress = Math.min(100, Math.round((stats.totalWorkouts / 5) * 100));
+    let nextRankText = `${Math.max(1, 5 - stats.totalWorkouts)} treinos para Guerreiro de Aço`;
+
+    if (stats.totalWorkouts >= 30) {
+      rankLevel = 4;
+      rankTitle = 'Titã';
+      rankBadgeColor = '#c084fc';
+      rankBadgeSVG = `
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 6px rgba(192,132,252,0.8));">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="rgba(192,132,252,0.25)"/>
+        </svg>
+      `;
+      rankProgress = 100;
+      nextRankText = 'Grau Máximo de Glória Atingido';
+    } else if (stats.totalWorkouts >= 15) {
+      rankLevel = 3;
+      rankTitle = 'Guardião do Templo';
+      rankBadgeColor = '#ec4899';
+      rankBadgeSVG = `
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 6px rgba(236,72,153,0.8));">
+          <path d="M2 9.5L12 4l10 5.5v1H2v-1z" fill="rgba(236,72,153,0.15)"/>
+          <line x1="6" y1="11" x2="6" y2="18"/>
+          <line x1="10" y1="11" x2="10" y2="18"/>
+          <line x1="14" y1="11" x2="14" y2="18"/>
+          <line x1="18" y1="11" x2="18" y2="18"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+          <line x1="2" y1="21" x2="22" y2="21"/>
+        </svg>
+      `;
+      rankProgress = Math.min(100, Math.round(((stats.totalWorkouts - 15) / 15) * 100));
+      nextRankText = `${30 - stats.totalWorkouts} treinos para Titã do Cosmos`;
+    } else if (stats.totalWorkouts >= 5) {
+      rankLevel = 2;
+      rankTitle = 'Guerreiro de Aço';
+      rankBadgeColor = '#fbbf24';
+      rankBadgeSVG = `
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 6px rgba(251,191,36,0.8));">
+          <line x1="6" y1="18" x2="18" y2="6"/>
+          <polyline points="13 6 18 6 18 11"/>
+          <line x1="4" y1="16" x2="8" y2="20"/>
+          <line x1="18" y1="18" x2="6" y2="6"/>
+          <polyline points="11 6 6 6 6 11"/>
+          <line x1="20" y1="16" x2="16" y2="20"/>
+        </svg>
+      `;
+      rankProgress = Math.min(100, Math.round(((stats.totalWorkouts - 5) / 10) * 100));
+      nextRankText = `${15 - stats.totalWorkouts} treinos para Guardião do Templo`;
+    }
+
+    // Insígnias / Badges
+    const badges = [
+      {
+        id: 'first-workout',
+        iconSVG: `
+          <img src="./favicon.png" alt="Primeiro Templo" style="width: 26px; height: 26px; border-radius: 8px; object-fit: contain; filter: drop-shadow(0 0 6px rgba(56,189,248,0.6)); display: block;" />
+        `,
+        title: 'Primeiro Templo',
+        desc: 'Completou o 1º treino no templo',
+        unlocked: stats.totalWorkouts >= 1
+      },
+      {
+        id: 'streak-flame',
+        iconSVG: `
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z" fill="rgba(249,115,22,0.25)"/>
+          </svg>
+        `,
+        title: 'Chama Viva',
+        desc: 'Manteve streak de 3+ dias',
+        unlocked: stats.currentStreak >= 3 || stats.bestStreak >= 3
+      },
+      {
+        id: 'tita-force',
+        iconSVG: `
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 5v14"/>
+            <path d="M18 5v14"/>
+            <path d="M2 9v6"/>
+            <path d="M22 9v6"/>
+            <path d="M2 12h20"/>
+            <rect x="5" y="7" width="2" height="10" rx="1" fill="rgba(236,72,153,0.3)"/>
+            <rect x="17" y="7" width="2" height="10" rx="1" fill="rgba(236,72,153,0.3)"/>
+          </svg>
+        `,
+        title: 'Força de Titã',
+        desc: 'Ergueu 5+ toneladas em carga',
+        unlocked: stats.totalVolumeKg >= 5000
+      },
+      {
+        id: 'communion',
+        iconSVG: `
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>
+            <circle cx="12" cy="12" r="3" fill="rgba(192,132,252,0.35)"/>
+          </svg>
+        `,
+        title: 'Comunhão',
+        desc: 'Consultou a sabedoria do Oráculo',
+        unlocked: (StorageService.getChatHistory().length > 1 || StorageService.getChatSessions().length > 0)
+      }
+    ];
 
     container.innerHTML = `
-      <!-- Palco Celestial: Lua com Fase Astronômica Real e Saudação Cósmica -->
-      <section class="templo-celestial-stage">
-        <div class="celestial-moon-col">
-          <div id="moon-mount-point"></div>
+      <div style="padding: 16px 18px 80px;">
+        <!-- Cabeçalho do Templo -->
+        <div style="margin-bottom: 14px;">
+          <h2 style="font-family: var(--font-carved); font-size: 1.35rem; color: #fff; margin-bottom: 2px;">
+            MEU TEMPLO
+          </h2>
+          <p style="font-size: 0.78rem; color: var(--concrete-300);">
+            Seu santuário pessoal, perfil, insígnias e conquistas sagradas.
+          </p>
         </div>
-        <div class="celestial-stage-info">
-          <div class="celestial-stage-badge">
-            <span class="badge-spark">${lunar.phaseIcon}</span>
-            <span>${lunar.phaseName.toUpperCase()} • ${lunar.illuminationPercent}% ILUMINADA</span>
-          </div>
-          <h2 class="celestial-stage-title">${lunar.cosmicBlessing}</h2>
-          <span class="celestial-stage-hint"></span>
-        </div>
-      </section>
 
-      <!-- Banner Oráculo com Espaçamento Amplo, Liquid Glass e Troca Dinâmica -->
-      <section class="energy-oracle-banner">
-        <div class="oracle-banner-header">
-          <div class="oracle-tag-group">
-            <span class="oracle-icon-quote" style="display: inline-flex; align-items: center;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--baby-pink)" style="filter: drop-shadow(0 0 6px var(--baby-pink));">
-                <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+        <!-- 1. SABEDORIA DO DIA (Topo do Templo) -->
+        <section class="energy-oracle-banner" style="margin-bottom: 14px;">
+          <div class="oracle-banner-header">
+            <div class="oracle-tag-group">
+              <span class="oracle-icon-quote" style="display: inline-flex; align-items: center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--baby-pink)" style="filter: drop-shadow(0 0 6px var(--baby-pink));">
+                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+                </svg>
+              </span>
+              <span class="oracle-quote-tag">SABEDORIA DO DIA</span>
+            </div>
+            <button class="oracle-cycle-btn" id="btn-refresh-oracle" type="button" title="Invocar novo ensinamento">
+              <span class="cycle-arrow">↺</span>
+              <span class="cycle-label">Nova profecia</span>
+            </button>
+          </div>
+          <div class="oracle-quote-text" id="templo-oracle-quote">
+            ${GeminiService.getOracleDailyWisdom()}
+          </div>
+        </section>
+
+        <!-- 2. CARTÃO DE PERFIL DO GUERREIRO (Métricas kg, cm, IMC) -->
+        <div class="stone-panel" style="margin-bottom: 14px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(14, 16, 24, 0.85); box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+          <div class="templo-warrior-card-header">
+            <div class="warrior-header-left">
+              <h3 class="warrior-header-title">
+                ${(p.name && p.name.trim()) ? p.name : 'Guerreiro Cósmico'}
+              </h3>
+              <div class="warrior-header-sub">
+                ${isBioConfigured ? `
+                  <span class="warrior-sub-configured">${goalFreqText}</span>
+                ` : `
+                  <span class="warrior-sub-pending">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    Métricas pendentes
+                  </span>
+                `}
+              </div>
+            </div>
+            <button id="btn-edit-profile" class="templo-edit-profile-btn" type="button" title="Editar medidas corporais e preferências">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
               </svg>
-            </span>
-            <span class="oracle-quote-tag">MENSAGEM PARA VOCÊ</span>
+              <span>Editar Perfil</span>
+            </button>
           </div>
-          <button class="oracle-cycle-btn" id="btn-refresh-oracle" type="button" title="Invocar novo ensinamento">
-            <span class="cycle-arrow">↺</span>
-            <span class="cycle-label">Nova profecia</span>
-          </button>
-        </div>
-        <div class="oracle-quote-text" id="templo-oracle-quote">
-          ${GeminiService.getOracleDailyWisdom()}
-        </div>
-      </section>
 
-      <!-- Métricas Rápidas com Furta-Cor e Noite Cósmica -->
-      <div class="stats-grid-row">
-        <div class="stat-metric-card">
-          <div class="stat-metric-val" style="display: flex; align-items: center; justify-content: center; gap: 4px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="vertical-align: middle; filter: drop-shadow(0 0 4px rgba(249,115,22,0.8)); flex-shrink: 0;">
-              <defs>
-                <linearGradient id="temploStreakFlame" x1="0%" y1="100%" x2="0%" y2="0%">
-                  <stop offset="0%" stop-color="#ef4444" />
-                  <stop offset="50%" stop-color="#f97316" />
-                  <stop offset="100%" stop-color="#fbbf24" />
-                </linearGradient>
-              </defs>
-              <path d="M12 2C9.5 5.5 8 8.5 8 11.5c0 1.2.3 2.3.8 3.2-1.3-.8-2.3-2.1-2.8-3.7C4.8 12.5 4 14.7 4 17c0 4.4 3.6 8 8 8s8-3.6 8-8c0-4-2.5-7.5-5-10.5-.5 2-1.5 3.5-3 4.5.3-2.5 0-5.5-2-9z" fill="url(#temploStreakFlame)"/>
-              <path d="M12 14c-1.5 1.5-2 3-2 4.5 0 2.2 1.8 3.5 3 3.5s3-1.3 3-3.5c0-1.8-1-3.2-2-4.5-.5-.7-1.5-.7-2 0z" fill="#fef08a" opacity="0.95"/>
-            </svg>
-            <span style="background: var(--rainbow-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-size: 200% 200%; animation: rainbow-move 4s ease infinite;">${stats.currentStreak}</span>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; background: rgba(0,0,0,0.35); padding: 10px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.04);">
+            <div>
+              <div style="font-family: var(--font-hud); font-size: 1.1rem; color: #fff;">${weightDisplay}</div>
+              <div style="font-size: 0.65rem; color: var(--concrete-400); text-transform: uppercase;">Peso</div>
+            </div>
+            <div>
+              <div style="font-family: var(--font-hud); font-size: 1.1rem; color: #fff;">${heightDisplay}</div>
+              <div style="font-size: 0.65rem; color: var(--concrete-400); text-transform: uppercase;">Altura</div>
+            </div>
+            <div>
+              <div style="font-family: var(--font-hud); font-size: 1.1rem; color: #ffffff;">${imc}</div>
+              <div style="font-size: 0.65rem; color: var(--concrete-400); text-transform: uppercase;">IMC</div>
+            </div>
           </div>
-          <div class="stat-metric-lbl">Dias Seguidos</div>
         </div>
-        <div class="stat-metric-card">
-          <div class="stat-metric-val" style="color: var(--night-blue-accent);">${stats.totalWorkouts}</div>
-          <div class="stat-metric-lbl">Treinos Batidos</div>
+
+        <!-- 3. PATENTE CÓSMICA / NÍVEL DO GUERREIRO -->
+        <div class="stone-panel" style="margin-bottom: 14px; padding: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="cosmic-rank-badge-live" id="templo-rank-badge" style="--badge-glow: ${rankBadgeColor};" title="Sua insígnia de patente cósmica atual (Toque para canalizar!)">
+                ${rankBadgeSVG}
+              </div>
+              <div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 0.65rem; color: var(--concrete-400); text-transform: uppercase; font-family: var(--font-hud); letter-spacing: 1px;">
+                    PATENTE
+                  </span>
+                  <span style="font-size: 0.62rem; padding: 1px 6px; border-radius: 4px; background: rgba(56,189,248,0.12); color: #7dd3fc; font-weight: 700; font-family: var(--font-hud);">
+                    GRAU ${rankLevel}/4
+                  </span>
+                </div>
+                <div style="font-family: var(--font-serif); font-size: 1.22rem; font-weight: 700; color: #fff; margin-top: 1px; letter-spacing: 0.2px;">
+                  ${rankTitle}
+                </div>
+              </div>
+            </div>
+            <button id="btn-rank-info-modal" type="button" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--concrete-300); border-radius: 999px; padding: 5px 12px; font-size: 0.68rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);" title="Entender o sistema de patentes e insígnias">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span>Como funciona?</span>
+            </button>
+          </div>
+
+          <p style="font-size: 0.74rem; color: var(--concrete-300); margin: 0 0 12px; line-height: 1.4;">
+            Sua <strong>graduação marcial contínua</strong>. Evolui a cada treino concluído no app, forjando um novo brasão sagrado de maestria.
+          </p>
+
+          <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; margin-bottom: 6px;">
+            <div style="height: 100%; width: ${rankProgress}%; background: linear-gradient(90deg, #38bdf8, #ec4899); border-radius: 999px; transition: width 0.4s ease;"></div>
+          </div>
+          <div style="font-size: 0.68rem; color: var(--concrete-400); display: flex; justify-content: space-between;">
+            <span>Evolução</span>
+            <span style="color: #fff; font-weight: 600;">${nextRankText}</span>
+          </div>
         </div>
-        <div class="stat-metric-card">
-          <div class="stat-metric-val">${(stats.totalVolumeKg / 1000).toFixed(1)}t</div>
-          <div class="stat-metric-lbl">Toneladas Carga</div>
+
+        <!-- 4. VITRINE DE INSÍGNIAS CÓSMICAS (Design Mobile Impecável & Favicon Sagrado) -->
+        <div class="stone-panel" style="padding: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.72rem; color: var(--concrete-300); text-transform: uppercase; font-family: var(--font-hud); letter-spacing: 1px; font-weight: 700;">
+                INSÍGNIAS & CONQUISTAS
+              </span>
+            </div>
+            <span style="font-size: 0.7rem; color: var(--neon-cyan); font-weight: 700;">
+              ${badges.filter(b => b.unlocked).length}/${badges.length} desbloqueadas
+            </span>
+          </div>
+
+          <p style="font-size: 0.72rem; color: var(--concrete-400); margin: 0 0 12px; line-height: 1.4;">
+            <strong>Medalhas de honra</strong> concedidas por cumprir feitos específicos de constância, carga e exploração.
+          </p>
+
+          <div class="templo-badges-list">
+            ${badges.map(b => `
+              <div class="templo-badge-card ${b.unlocked ? 'unlocked' : 'locked'}" data-badge-id="${b.id}" title="Toque para ver detalhes da conquista">
+                <div class="templo-badge-left">
+                  <div class="templo-badge-icon-box">
+                    ${b.iconSVG}
+                  </div>
+                  <div class="templo-badge-info">
+                    <div class="templo-badge-title">${b.title}</div>
+                    <div class="templo-badge-desc">${b.desc}</div>
+                  </div>
+                </div>
+                <div class="templo-badge-status-pill ${b.unlocked ? 'unlocked' : 'locked'}">
+                  ${b.unlocked ? `
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span>Conquistada</span>
+                  ` : `
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    <span>Bloqueada</span>
+                  `}
+                </div>
+              </div>
+            `).join('')}
+          </div>
         </div>
       </div>
-
-      <!-- Card do Portal Hero (Treino do Dia) -->
-      <section class="hero-portal-card">
-        <div class="portal-arch-glow"></div>
-        <div class="portal-tag-row">
-          <span class="portal-code">${nextRoutine.code}</span>
-          <span class="portal-duration">⏱️ ~${nextRoutine.durationMin} min</span>
-        </div>
-        <h2 class="portal-title">${nextRoutine.title}</h2>
-        <div class="portal-focus">Foco: ${nextRoutine.focus}</div>
-
-        <div class="portal-preview-list">
-          ${nextRoutine.exercises.map(item => {
-      const exData = EXERCISES.find(e => e.id === item.exerciseId) || { name: item.exerciseId };
-      return `
-              <div class="preview-item">
-                <span class="ex-name">🏛️ ${exData.name}</span>
-                <span class="ex-sets">${item.sets}x ${item.reps}</span>
-              </div>
-            `;
-    }).join('')}
-        </div>
-
-        <button class="btn-enter-temple" id="btn-start-or-resume">
-          ${hasActiveWorkout ? 'RETOMAR TREINO ATIVO' : 'BATER PONTO & INICIAR TREINO'}
-        </button>
-      </section>
-
-      <!-- Santuário 3D das Colunas Gregas & Ciclo Lunar -->
-      <div id="home-heatmap-mount"></div>
     `;
 
-    // Monta a Lua Branca Interativa
-    const moonMount = container.querySelector('#moon-mount-point');
-    if (moonMount) {
-      new CelestialMoon(moonMount);
+    // Eventos do Templo
+    const rankBadgeEl = container.querySelector('#templo-rank-badge');
+    if (rankBadgeEl) {
+      rankBadgeEl.addEventListener('click', () => {
+        sound.playTapSound();
+        if ('vibrate' in navigator) navigator.vibrate([25, 35, 45]);
+        rankBadgeEl.style.transform = 'scale(1.22) rotate(8deg)';
+        setTimeout(() => {
+          rankBadgeEl.style.transform = '';
+        }, 250);
+      });
     }
 
-    // Monta a Colunata 3D e Ciclo Lunar
-    const heatMount = container.querySelector('#home-heatmap-mount');
-    if (heatMount) {
-      new WorkoutHeatmap(heatMount, stats.activeDaysSet, history);
+    const btnEditProfile = container.querySelector('#btn-edit-profile');
+    if (btnEditProfile) {
+      btnEditProfile.addEventListener('click', () => {
+        this.openProfileManagerModal();
+      });
     }
 
-    // Botão de Trocar/Atualizar Ensinamento do Oráculo
+    const btnRankInfo = container.querySelector('#btn-rank-info-modal');
+    if (btnRankInfo) {
+      btnRankInfo.addEventListener('click', () => {
+        sound.playTapSound();
+        if ('vibrate' in navigator) navigator.vibrate([20, 25]);
+        btnRankInfo.style.transform = 'scale(0.92)';
+        setTimeout(() => {
+          btnRankInfo.style.transform = '';
+          this.openHonorSystemModal();
+        }, 120);
+      });
+    }
+
+    // Modal de Insígnias Cósmicas: quebra de linha no Status, estilização diferenciada 
+    container.querySelectorAll('.templo-badge-card').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = el.getAttribute('data-badge-id');
+        const badge = badges.find(b => b.id === id);
+        if (badge) {
+          sound.playTapSound();
+          if ('vibrate' in navigator) navigator.vibrate(25);
+          
+          const statusTitle = badge.unlocked ? 'STATUS: DESBLOQUEADA' : 'STATUS: BLOQUEADA';
+          const statusText = badge.unlocked
+            ? 'Consagrada no santuário através dos seus treinos no templo.'
+            : 'Bloqueada no momento. Continue treinando para forjar este feito marcial.';
+          const statusColor = badge.unlocked ? '#38bdf8' : 'var(--concrete-400)';
+          const statusBg = badge.unlocked ? 'rgba(56, 189, 248, 0.08)' : 'rgba(255, 255, 255, 0.03)';
+          const statusBorder = badge.unlocked ? 'rgba(56, 189, 248, 0.25)' : 'rgba(255, 255, 255, 0.08)';
+
+          const badgeHtml = `
+            <div style="font-size: 0.85rem; color: var(--concrete-300); margin-bottom: 14px; line-height: 1.45;">
+              ${badge.desc}.
+            </div>
+            <div style="padding: 10px 14px; border-radius: 10px; background: ${statusBg}; border: 1px solid ${statusBorder}; text-align: left;">
+              <div style="font-size: 0.65rem; color: ${statusColor}; text-transform: uppercase; font-family: var(--font-hud); letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">
+                ${statusTitle}
+              </div>
+              <div style="font-size: 0.78rem; color: #ffffff; line-height: 1.4;">
+                ${statusText}
+              </div>
+            </div>
+          `;
+
+          this.showCosmicModalAlert({
+            title: badge.title.toUpperCase(),
+            message: badgeHtml,
+            type: badge.unlocked ? 'success' : 'info'
+          });
+        }
+      });
+    });
+
     const refreshOracleBtn = container.querySelector('#btn-refresh-oracle');
     if (refreshOracleBtn) {
       refreshOracleBtn.addEventListener('click', () => {
@@ -583,54 +1031,262 @@ class AgiteMeApp {
         }
       });
     }
-
-    // Ação do Botão Começar/Retomar
-    container.querySelector('#btn-start-or-resume').addEventListener('click', () => {
-      if (!this.activeSession) {
-        this.startWorkoutSession(nextRoutine);
-      }
-      this.switchTab('treino');
-    });
   }
 
   // ==========================================
   // VIEW 2: TREINO ATIVO & CRONÔMETRO
   // ==========================================
   renderTreinoView(container) {
+    const p = this.profile || StorageService.getProfile();
+
     if (!this.activeSession) {
+      // Saudação dinâmica baseada no horário do dia e no nome do usuário
+      const currentHour = new Date().getHours();
+      let greetingTime = 'Olá';
+      if (currentHour >= 5 && currentHour < 12) {
+        greetingTime = 'Bom dia';
+      } else if (currentHour >= 12 && currentHour < 18) {
+        greetingTime = 'Boa tarde';
+      } else {
+        greetingTime = 'Boa noite';
+      }
+
+      const rawName = (p.name && p.name.trim()) ? p.name.trim() : '';
+      const isNamed = rawName && rawName.toLowerCase() !== 'guerreiro (sem nome)' && rawName.toLowerCase() !== 'guerreiro cósmico';
+      const displayName = isNamed ? rawName : 'Guerreiro(a)';
+
       // Nenhum treino em andamento: exibe seletor de rotina para iniciar
       container.innerHTML = `
-        <div style="padding: 24px 18px; text-align: center;">
-          <div style="font-size: 2.5rem; margin-bottom: 8px;">🏛️</div>
-          <h2 style="font-family: var(--font-carved); font-size: 1.4rem; color: #fff; margin-bottom: 6px;">PORTAIS DE TREINO</h2>
-          <p style="font-size: 0.85rem; color: var(--concrete-300); margin-bottom: 24px;">
-            Escolha o portal do dia para iniciar o cronômetro cósmico.
+        <div style="padding: 16px 18px 28px; text-align: center;">
+          <!-- Totem do Portal Cósmico Interativo com Anéis Orbitais e Favicon Sagrado -->
+          <div class="portal-totem-wrapper">
+            <div class="portal-totem-interactive" id="treino-portal-totem" title="Toque para canalizar a energia cósmica!">
+              <div class="totem-aura-glow"></div>
+              <div class="totem-orbital-ring"></div>
+              <div class="totem-center-arch">
+                <img src="./favicon.png" alt="Portal Cósmico" class="totem-favicon-img" />
+              </div>
+            </div>
+            
+            <div style="margin-top: 10px;">
+              <span style="display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); font-size: 0.68rem; color: #e2e8f0; font-weight: 700; letter-spacing: 0.5px;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor"/>
+                </svg>
+                Seja bem vindo ao Oráculo
+              </span>
+            </div>
+          </div>
+
+          <h2 style="font-family: var(--font-carved); font-size: 1.4rem; color: #fff; margin-bottom: 4px; letter-spacing: 0.5px;">
+            ${greetingTime}, ${displayName}!
+          </h2>
+          <p style="font-size: 0.82rem; color: var(--concrete-300); margin-bottom: 22px;">
+            Escolha seu portal do dia para iniciar o treino.
           </p>
 
-          <div style="display: flex; flex-direction: column; gap: 14px;">
-            ${DEFAULT_ROUTINES.map(routine => `
-              <div class="stone-panel" style="text-align: left; cursor: pointer; border-left: 3px solid ${routine.color};" data-routine-id="${routine.id}">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                  <span class="portal-code" style="color: ${routine.color}; border-color: ${routine.color};">${routine.code}</span>
-                  <span style="font-size: 0.75rem; color: var(--concrete-400);">⏱️ ~${routine.durationMin} min</span>
-                </div>
-                <h3 style="font-family: var(--font-carved); font-size: 1.1rem; color: #fff; margin-bottom: 4px;">${routine.title}</h3>
-                <p style="font-size: 0.8rem; color: var(--concrete-300); margin-bottom: 12px;">${routine.description}</p>
-                <button class="btn-enter-temple" style="padding: 10px 14px; font-size: 0.85rem;" data-start-routine="${routine.id}">
-                  INICIAR ESTE PORTAL ⚡
-                </button>
-              </div>
-            `).join('')}
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            ${(() => {
+              const routineMetaConfig = {
+                'portal-a': {
+                  accent: '#38bdf8',
+                  glow: 'rgba(56, 189, 248, 0.35)',
+                  badgeBg: 'rgba(56, 189, 248, 0.12)',
+                  badgeBorder: 'rgba(56, 189, 248, 0.35)',
+                  svgGlyph: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M8 11h8"/><path d="M12 7v8"/></svg>`,
+                  muscles: ['Peitoral', 'Deltoides', 'Tríceps'],
+                  focusTag: 'EMPURRAR • FORÇA SUPERIOR',
+                  setsEstimate: '~15 Séries'
+                },
+                'portal-b': {
+                  accent: '#ec4899',
+                  glow: 'rgba(236, 72, 153, 0.35)',
+                  badgeBg: 'rgba(236, 72, 153, 0.12)',
+                  badgeBorder: 'rgba(236, 72, 153, 0.35)',
+                  svgGlyph: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v14"/><path d="M18 5v14"/><path d="M2 12h20"/><rect x="5" y="7" width="2" height="10" rx="1" fill="rgba(236,72,153,0.3)"/><rect x="17" y="7" width="2" height="10" rx="1" fill="rgba(236,72,153,0.3)"/></svg>`,
+                  muscles: ['Costas', 'Bíceps', 'Core'],
+                  focusTag: 'PUXAR • EXPANSÃO DORSAL',
+                  setsEstimate: '~12 Séries'
+                },
+                'portal-c': {
+                  accent: '#fbbf24',
+                  glow: 'rgba(251, 191, 36, 0.35)',
+                  badgeBg: 'rgba(251, 191, 36, 0.12)',
+                  badgeBorder: 'rgba(251, 191, 36, 0.35)',
+                  svgGlyph: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="rgba(251,191,36,0.25)"/></svg>`,
+                  muscles: ['Quadríceps', 'Posteriores', 'Pilares'],
+                  focusTag: 'PERNAS • BASE DE CONCRETO',
+                  setsEstimate: '~14 Séries'
+                }
+              };
+
+              const currentRoutines = StorageService.getRoutines();
+
+              return currentRoutines.map(routine => {
+                const meta = routineMetaConfig[routine.id] || {
+                  accent: routine.color || '#38bdf8',
+                  glow: 'rgba(56, 189, 248, 0.3)',
+                  badgeBg: 'rgba(56, 189, 248, 0.1)',
+                  badgeBorder: 'rgba(56, 189, 248, 0.25)',
+                  svgGlyph: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+                  muscles: ['Geral', 'Força'],
+                  focusTag: routine.subtitle || 'PORTAL SAGRADO',
+                  setsEstimate: '~12 Séries'
+                };
+
+                return `
+                  <div class="portal-living-card" data-routine-id="${routine.id}" style="--portal-accent: ${meta.accent}; --portal-glow: ${meta.glow}; --portal-badge-bg: ${meta.badgeBg}; --portal-badge-border: ${meta.badgeBorder};" title="Toque para iniciar ${routine.title}">
+                    <div class="portal-ambient-glow"></div>
+
+                    <!-- Barra Superior do Portal -->
+                    <div class="portal-top-bar">
+                      <div class="portal-badge-chip">
+                        <span class="portal-glyph-slot">${meta.svgGlyph}</span>
+                        <span>${routine.code}</span>
+                      </div>
+                      <div class="portal-time-chip">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="12" r="9"/>
+                          <polyline points="12 6 12 12 15 15"/>
+                        </svg>
+                        <span>~${routine.durationMin} min</span>
+                      </div>
+                    </div>
+
+                    <!-- Título e Subtítulo -->
+                    <div class="portal-title-row">
+                      <div class="portal-living-subtitle">${meta.focusTag}</div>
+                      <h3 class="portal-living-title">${routine.title}</h3>
+                    </div>
+
+                    <p class="portal-living-desc">${routine.description}</p>
+
+                    <!-- Tags de Grupos Musculares Alvo -->
+                    <div class="portal-muscle-tags">
+                      ${meta.muscles.map(m => `
+                        <span class="portal-muscle-pill">
+                          <span class="portal-muscle-dot"></span>
+                          ${m}
+                        </span>
+                      `).join('')}
+                    </div>
+
+                    <!-- Metadados de Exercícios & Séries -->
+                    <div class="portal-meta-bar">
+                      <span>Volume Estimado: <strong class="portal-meta-highlight">${routine.exercises ? routine.exercises.length : 4} Exercícios</strong></span>
+                      <span>Séries: <strong class="portal-meta-highlight">${meta.setsEstimate}</strong></span>
+                    </div>
+
+                    <!-- Lista/Accordion de Exercícios do Portal com Opção de Troca Manual -->
+                    <div class="portal-exercises-preview" onclick="event.stopPropagation()">
+                      <div class="portal-exercises-preview-header">
+                        <span class="portal-ex-preview-title">MOVIMENTOS DO PORTAL (${routine.exercises ? routine.exercises.length : 0})</span>
+                        <button class="btn-toggle-portal-exercises" data-toggle-portal-ex="${routine.id}" type="button">
+                          <span>Personalizar</span>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                      </div>
+                      <div class="portal-exercises-list hidden" id="portal-ex-list-${routine.id}">
+                        ${(routine.exercises || []).map((exItem, exIdx) => {
+                          const exData = EXERCISES.find(e => e.id === exItem.exerciseId) || { name: exItem.exerciseId, equipment: 'Aparelho' };
+                          return `
+                            <div class="portal-ex-item-row">
+                              <div class="portal-ex-item-info">
+                                <span class="portal-ex-item-num">${exIdx + 1}</span>
+                                <div class="portal-ex-item-text">
+                                  <span class="portal-ex-item-name">${exData.name}</span>
+                                  <span class="portal-ex-item-detail">${exItem.sets} séries • ${exItem.reps} reps • ${exData.equipment || ''}</span>
+                                </div>
+                              </div>
+                              <button class="btn-portal-swap-ex" data-portal-id="${routine.id}" data-old-ex-id="${exItem.exerciseId}" type="button" title="Trocar este exercício">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+                                Trocar
+                              </button>
+                            </div>
+                          `;
+                        }).join('')}
+                      </div>
+                    </div>
+
+                    <!-- Botão de Iniciar Portal com Shimmer e Seta -->
+                    <button class="portal-launch-btn" type="button" data-start-routine="${routine.id}">
+                      <span>INICIAR ESTE PORTAL</span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                        <polyline points="12 5 19 12 12 19"/>
+                      </svg>
+                    </button>
+                  </div>
+                `;
+              }).join('');
+            })()}
           </div>
         </div>
       `;
 
-      container.querySelectorAll('[data-start-routine]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const rId = btn.getAttribute('data-start-routine');
-          const picked = DEFAULT_ROUTINES.find(r => r.id === rId);
+      // Interação tátil no Totem 
+      const totem = container.querySelector('#treino-portal-totem');
+      if (totem) {
+        totem.addEventListener('click', () => {
+          sound.playTapSound();
+          if ('vibrate' in navigator) navigator.vibrate([30, 40, 50]);
+          totem.style.transform = 'scale(1.15) rotate(8deg)';
+          setTimeout(() => {
+            totem.style.transform = '';
+          }, 350);
+        });
+      }
+
+      // Eventos de Personalização de Exercícios no Portal
+      container.querySelectorAll('[data-toggle-portal-ex]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const rId = btn.getAttribute('data-toggle-portal-ex');
+          const listEl = container.querySelector(`#portal-ex-list-${rId}`);
+          if (listEl) {
+            listEl.classList.toggle('hidden');
+            const isExpanded = !listEl.classList.contains('hidden');
+            const labelSpan = btn.querySelector('span');
+            if (labelSpan) labelSpan.textContent = isExpanded ? 'Recolher' : 'Personalizar';
+            sound.playTapSound();
+          }
+        });
+      });
+
+      container.querySelectorAll('.btn-portal-swap-ex').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const portalId = btn.getAttribute('data-portal-id');
+          const oldExId = btn.getAttribute('data-old-ex-id');
+          this.openRoutineExerciseSwapModal(portalId, oldExId, container);
+        });
+      });
+
+      const launchRoutine = (rId) => {
+        sound.playTapSound();
+        if ('vibrate' in navigator) navigator.vibrate([25, 35]);
+        const userRoutines = StorageService.getRoutines();
+        const picked = userRoutines.find(r => r.id === rId);
+        if (picked) {
           this.startWorkoutSession(picked);
           this.renderTreinoView(container);
+        }
+      };
+
+      container.querySelectorAll('.portal-living-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+          // Se clicou na área de personalização ou botões, ignora lançamento acidental
+          if (e.target.closest('.portal-exercises-preview') || e.target.closest('button')) return;
+          const rId = card.getAttribute('data-routine-id');
+          launchRoutine(rId);
+        });
+      });
+
+      container.querySelectorAll('[data-start-routine]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const rId = btn.getAttribute('data-start-routine');
+          launchRoutine(rId);
         });
       });
       return;
@@ -693,16 +1349,31 @@ class AgiteMeApp {
                   <h3 class="exercise-name">${displayName}</h3>
                   <div class="exercise-header-actions">
                     <button class="btn-exercise-guide" data-view-exercise="${item.exerciseId}">
-                      📖 Como Fazer
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                      </svg>
+                      Como Fazer
                     </button>
                     <button class="btn-oracle-swap" data-swap-exercise="${exIndex}">
-                      🔮 Trocar com IA
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="m9 12 2 2 4-4"/>
+                      </svg>
+                      Trocar com IA
                     </button>
                   </div>
                 </div>
                 <div class="exercise-sub-row">
-                  <span class="muscle-tag">🎯 ${exData.muscleLabel}</span>
-                  <span class="equip-tag">⚡ ${displayEquip}</span>
+                  <span class="muscle-tag" style="display: inline-flex; align-items: center; gap: 4px;">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"/>
+                      <circle cx="12" cy="12" r="6"/>
+                      <circle cx="12" cy="12" r="2"/>
+                    </svg>
+                    ${exData.muscleLabel}
+                  </span>
+                  <span class="equip-tag"> ${displayEquip}</span>
                 </div>
               </div>
 
@@ -868,7 +1539,7 @@ class AgiteMeApp {
       });
     });
 
-    // 4. Substituir Exercício com IA Gemini em Modal Específico
+    // 4. Substituir Exercício com Gemini
     container.querySelectorAll('[data-swap-exercise]').forEach(btn => {
       btn.addEventListener('click', () => {
         const exIdx = parseInt(btn.getAttribute('data-swap-exercise'), 10);
@@ -884,7 +1555,7 @@ class AgiteMeApp {
       });
     });
 
-    // 5. Finalizar Treino (Check-out com Modal Elegante In-App)
+    // 5. Finalizar Treino (Check-out)
     const finishBtn = container.querySelector('#btn-finish-workout');
     if (finishBtn) {
       finishBtn.addEventListener('click', () => {
@@ -893,7 +1564,7 @@ class AgiteMeApp {
     }
   }
 
-  // Modal de Confirmação In-App do Check-out (Sem alertas nativos de navegador)
+  // Modal de Confirmação In-App do Check-out 
   openCheckoutConfirmModal() {
     const modalContainer = document.querySelector('#modal-container');
     const title = this.activeSession?.routineTitle || 'Treino Cósmico';
@@ -901,18 +1572,28 @@ class AgiteMeApp {
     modalContainer.innerHTML = `
       <div class="modal-overlay" id="checkout-confirm-overlay">
         <div class="modal-sheet stone-panel checkout-celebration-card" style="text-align: center; max-width: 380px;">
-          <div style="font-size: 2.5rem; margin-bottom: 8px;">🏁</div>
+          <div style="margin-bottom: 12px; display: flex; justify-content: center;">
+            <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.35); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                <line x1="4" y1="22" x2="4" y2="15"/>
+              </svg>
+            </div>
+          </div>
           <h2 class="celebration-title" style="margin-bottom: 6px;">FAZER CHECK-OUT?</h2>
           <div class="celebration-subtitle" style="margin-bottom: 16px;">
             Deseja finalizar o <strong>${title}</strong>, registrar as cargas e consagrar seu Streak?
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
-            <button class="btn-enter-temple" id="btn-confirm-checkout" style="padding: 13px; font-size: 0.88rem;">
-              ✓ SIM, CONSAGRAR TREINO!
+            <button class="btn-enter-temple" id="btn-confirm-checkout" style="padding: 13px; font-size: 0.88rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              SIM, CONSAGRAR TREINO!
             </button>
             <button class="btn-exercise-guide" id="btn-cancel-checkout" style="justify-content: center; padding: 10px;">
-              ✕ Continuar Treinando
+              Continuar Treinando
             </button>
           </div>
         </div>
@@ -931,13 +1612,18 @@ class AgiteMeApp {
     });
   }
 
-  // Modal Interativo de Substituição com IA Gemini
-  openExerciseSwapModal(exIdx, currentExItem, exObj, container) {
+  // Modal de Personalização de Exercícios no Portal (Antes de Iniciar o Treino)
+  openRoutineExerciseSwapModal(portalId, oldExId, container) {
     const modalContainer = document.querySelector('#modal-container');
-    const currentName = currentExItem.exerciseName || exObj.name;
-    const currentEquip = currentExItem.exerciseEquipment || exObj.equipment;
+    const currentEx = EXERCISES.find(e => e.id === oldExId) || { id: oldExId, name: oldExId, muscle: 'peito', muscleLabel: 'Geral', equipment: 'Equipamento' };
+    const userRoutines = StorageService.getRoutines();
+    const routine = userRoutines.find(r => r.id === portalId);
+    const routineTitle = routine ? routine.title : 'Portal';
 
-    // Renderiza o modal em estado inicial de carregamento com orbe cósmico
+    // Alternativas do mesmo grupo muscular
+    const alternatives = EXERCISES.filter(e => e.muscle === currentEx.muscle && e.id !== currentEx.id);
+    let selectedExId = alternatives.length > 0 ? alternatives[0].id : '';
+
     modalContainer.innerHTML = `
       <div class="modal-overlay" id="swap-exercise-overlay">
         <div class="swap-modal-sheet">
@@ -945,12 +1631,114 @@ class AgiteMeApp {
 
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 1.3rem;">🔮</span>
+              <div style="width: 28px; height: 28px; border-radius: 8px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                </svg>
+              </div>
               <div>
                 <h3 style="font-family: var(--font-hud); font-size: 0.85rem; color: #fff; letter-spacing: 1.2px; text-transform: uppercase; margin: 0;">
-                  ORÁCULO DE SUBSTITUIÇÃO
+                  PERSONALIZAR MOVIMENTO
                 </h3>
-                <small style="color: var(--baby-pink); font-size: 0.68rem;">Adaptação Inteligente com IA</small>
+                <small style="color: var(--concrete-300); font-size: 0.68rem;">${routineTitle}</small>
+              </div>
+            </div>
+            <button id="btn-close-swap-modal" style="background: none; border: none; color: var(--concrete-400); font-size: 1.6rem; cursor: pointer;">&times;</button>
+          </div>
+
+          <div class="swap-card-comparison" style="margin-top: 4px;">
+            <div class="swap-box-current">
+              <span class="swap-label-tag">MOVIMENTO ATUAL</span>
+              <div class="swap-item-name">${currentEx.name}</div>
+              <div class="swap-item-equip">Aparelho: ${currentEx.equipment} • Foco: ${currentEx.muscleLabel}</div>
+            </div>
+          </div>
+
+          <div class="swap-alternatives-section">
+            <div class="swap-alternatives-title">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+              SELECIONE A ALTERNATIVA (${alternatives.length} DISPONÍVEIS)
+            </div>
+            <div class="swap-catalog-grid" id="swap-catalog-options">
+              ${alternatives.map((alt, idx) => `
+                <div class="swap-option-card ${idx === 0 ? 'selected' : ''}" data-alt-id="${alt.id}">
+                  <div class="swap-option-radio"></div>
+                  <div class="swap-option-details">
+                    <span class="swap-option-name">${alt.name}</span>
+                    <span class="swap-option-equip">${alt.equipment} • ${alt.targetGroup}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="swap-modal-actions">
+            <button class="btn-enter-temple" id="btn-confirm-routine-swap" style="padding: 12px; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              CONFIRMAR ALTERAÇÃO NO PORTAL
+            </button>
+            <button class="btn-exercise-guide" id="btn-cancel-routine-swap" style="justify-content: center; padding: 10px;">
+              Manter Exercício Atual
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const close = () => { modalContainer.innerHTML = ''; };
+    modalContainer.querySelector('#btn-close-swap-modal').addEventListener('click', close);
+    modalContainer.querySelector('#btn-cancel-routine-swap').addEventListener('click', close);
+    modalContainer.querySelector('#swap-exercise-overlay').addEventListener('click', (e) => {
+      if (e.target.id === 'swap-exercise-overlay') close();
+    });
+
+    // Seleção de cards
+    modalContainer.querySelectorAll('.swap-option-card').forEach(card => {
+      card.addEventListener('click', () => {
+        sound.playTapSound();
+        modalContainer.querySelectorAll('.swap-option-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedExId = card.getAttribute('data-alt-id');
+      });
+    });
+
+    // Confirmação
+    modalContainer.querySelector('#btn-confirm-routine-swap').addEventListener('click', () => {
+      if (!selectedExId) return;
+      StorageService.swapExerciseInRoutine(portalId, oldExId, selectedExId);
+      sound.playCheckSound();
+      if ('vibrate' in navigator) navigator.vibrate(60);
+      close();
+      this.renderTreinoView(container);
+    });
+  }
+
+  // Modal Interativo de Substituição com IA Gemini + Catálogo Manual
+  openExerciseSwapModal(exIdx, currentExItem, exObj, container) {
+    const modalContainer = document.querySelector('#modal-container');
+    const currentName = currentExItem.exerciseName || exObj.name;
+    const currentEquip = currentExItem.exerciseEquipment || exObj.equipment;
+
+    // Renderiza o modal em estado inicial de carregamento
+    modalContainer.innerHTML = `
+      <div class="modal-overlay" id="swap-exercise-overlay">
+        <div class="swap-modal-sheet">
+          <div class="modal-handle-bar"></div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 28px; height: 28px; border-radius: 8px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                </svg>
+              </div>
+              <div>
+                <h3 style="font-family: var(--font-hud); font-size: 0.85rem; color: #fff; letter-spacing: 1.2px; text-transform: uppercase; margin: 0;">
+                  ADAPTAÇÃO DE MOVIMENTO
+                </h3>
+                <small style="color: var(--concrete-300); font-size: 0.68rem;">Oráculo IA + Catálogo de Biomecânica</small>
               </div>
             </div>
             <button id="btn-close-swap-modal" style="background: none; border: none; color: var(--concrete-400); font-size: 1.6rem; cursor: pointer;">&times;</button>
@@ -959,8 +1747,8 @@ class AgiteMeApp {
           <div id="swap-modal-content">
             <div class="swap-modal-loading">
               <div class="swap-orb-pulse"></div>
-              <div style="font-size: 0.88rem; color: #ffffff; font-weight: 600;">Sintonizando frequências cósmicas...</div>
-              <div style="font-size: 0.74rem; color: var(--concrete-300);">Calculando alternativa biomecânica para "${currentName}"</div>
+              <div style="font-size: 0.88rem; color: #ffffff; font-weight: 600;">Sintonizando frequências do templo...</div>
+              <div style="font-size: 0.74rem; color: var(--concrete-300);">Calculando alternativas biomecânicas para "${currentName}"</div>
             </div>
           </div>
         </div>
@@ -978,6 +1766,9 @@ class AgiteMeApp {
       const contentEl = modalContainer.querySelector('#swap-modal-content');
       if (!contentEl) return;
 
+      const alternatives = EXERCISES.filter(e => e.muscle === exObj.muscle && e.id !== exObj.id);
+      let selectedEx = EXERCISES.find(e => e.name.toLowerCase() === suggestion.alternativeName.toLowerCase()) || alternatives[0] || exObj;
+
       contentEl.innerHTML = `
         <div class="swap-card-comparison">
           <div class="swap-box-current">
@@ -986,44 +1777,87 @@ class AgiteMeApp {
             <div class="swap-item-equip">Aparelho: ${currentEquip}</div>
           </div>
 
-          <div class="swap-box-suggested">
-            <span class="swap-label-tag">✨ SUGESTÃO DO ORÁCULO</span>
-            <div class="swap-item-name" style="color: var(--baby-pink);">${suggestion.alternativeName}</div>
+          <div class="swap-box-suggested swap-option-card selected" id="ai-suggested-card" data-alt-id="${selectedEx.id}">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <span class="swap-label-tag" style="display: inline-flex; align-items: center; gap: 4px;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+                SUGESTÃO PRINCIPAL DO ORÁCULO
+              </span>
+              <div class="swap-option-radio"></div>
+            </div>
+            <div class="swap-item-name">${suggestion.alternativeName}</div>
             <div class="swap-item-equip">Aparelho / Acessório: ${suggestion.equipment}</div>
           </div>
         </div>
 
         <div class="swap-reason-box">
-          <div class="swap-reason-title">🧠 ANÁLISE BIOMECÂNICA:</div>
+          <div class="swap-reason-title" style="display: flex; align-items: center; gap: 5px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a4.5 4.5 0 0 0-4.5 4.5c0 1.5.7 2.8 1.8 3.7C8.6 11.2 8 12.5 8 14v1a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-1c0-1.5-.6-2.8-1.3-3.8 1.1-.9 1.8-2.2 1.8-3.7A4.5 4.5 0 0 0 12 2z"/>
+            </svg>
+            ANÁLISE BIOMECÂNICA:
+          </div>
           <div class="swap-reason-text">${suggestion.reason}</div>
         </div>
 
-        ${suggestion.instructions ? `
-          <div style="margin-bottom: 14px; padding: 10px 12px; background: rgba(15, 23, 42, 0.5); border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.08);">
-            <div style="font-size: 0.68rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">COMO EXECUTAR A ALTERNATIVA:</div>
-            <div style="font-size: 0.78rem; color: #f1f5f9;">${suggestion.instructions}</div>
+        ${alternatives.length > 1 ? `
+          <div class="swap-alternatives-section">
+            <div class="swap-alternatives-title">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+              OU ESCOLHA OUTRO DO CATÁLOGO (${alternatives.length} OPÇÕES)
+            </div>
+            <div class="swap-catalog-grid">
+              ${alternatives.filter(alt => alt.id !== selectedEx.id).map(alt => `
+                <div class="swap-option-card" data-alt-id="${alt.id}">
+                  <div class="swap-option-radio"></div>
+                  <div class="swap-option-details">
+                    <span class="swap-option-name">${alt.name}</span>
+                    <span class="swap-option-equip">${alt.equipment} • ${alt.targetGroup}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
           </div>
         ` : ''}
 
-        <div class="swap-quote-box">
-          ${suggestion.oracleQuote}
-        </div>
-
         <div class="swap-modal-actions">
-          <button class="btn-enter-temple" id="btn-apply-swap" style="padding: 12px; font-size: 0.85rem;">
-            ✓ CONFIRMAR SUBSTITUIÇÃO NO TREINO
+          <button class="btn-enter-temple" id="btn-apply-swap" style="padding: 12px; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            CONFIRMAR SUBSTITUIÇÃO NO TREINO
           </button>
           <button class="btn-exercise-guide" id="btn-cancel-swap" style="justify-content: center; padding: 10px;">
-            ✕ Manter Exercício Atual
+            Manter Exercício Atual
           </button>
         </div>
       `;
 
-      modalContainer.querySelector('#btn-cancel-swap').addEventListener('click', close);
-      modalContainer.querySelector('#btn-apply-swap').addEventListener('click', () => {
-        currentExItem.exerciseName = suggestion.alternativeName;
-        currentExItem.exerciseEquipment = suggestion.equipment;
+      // Seleção entre a sugestão do Oráculo ou os outros cards do catálogo
+      contentEl.querySelectorAll('.swap-option-card').forEach(card => {
+        card.addEventListener('click', () => {
+          sound.playTapSound();
+          contentEl.querySelectorAll('.swap-option-card').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          const altId = card.getAttribute('data-alt-id');
+          selectedEx = EXERCISES.find(e => e.id === altId) || selectedEx;
+        });
+      });
+
+      contentEl.querySelector('#btn-cancel-swap').addEventListener('click', close);
+      contentEl.querySelector('#btn-apply-swap').addEventListener('click', () => {
+        const oldExId = currentExItem.exerciseId || exObj.id;
+        currentExItem.exerciseId = selectedEx.id;
+        currentExItem.exerciseName = selectedEx.name;
+        currentExItem.exerciseEquipment = selectedEx.equipment;
         StorageService.saveActiveSession(this.activeSession);
+
+        if (this.activeSession.routineId) {
+          StorageService.swapExerciseInRoutine(this.activeSession.routineId, oldExId, selectedEx.id);
+        }
+
         sound.playCheckSound();
         if ('vibrate' in navigator) navigator.vibrate(60);
         close();
@@ -1234,7 +2068,7 @@ class AgiteMeApp {
   }
 
   // ==========================================
-  // VIEW 4: HISTÓRICO & STREAKS (GYMRATS STYLE)
+  // VIEW 4: HISTÓRICO & STREAKS 
   // ==========================================
   renderHistoricoView(container) {
     const stats = StorageService.getStats();
@@ -1249,19 +2083,106 @@ class AgiteMeApp {
           Sua jornada registrada no concreto cósmico.
         </p>
 
-        <!-- Estatísticas Avançadas no Topo (Big Numbers) -->
-        <div class="stats-grid-row" style="margin: 0 0 18px;">
-          <div class="stat-metric-card">
-            <div class="stat-metric-val" style="color: var(--solar-gold);">${stats.bestStreak}d</div>
-            <div class="stat-metric-lbl">Recorde Streak</div>
+        <!-- Estatísticas Visuais Pro no Topo (Cards com Medidores Gráficos) -->
+        <div class="stats-grid-row-pro">
+          <!-- Card 1: Medidor de Chama Sagrada (Streak) -->
+          <div class="stat-metric-card-pro">
+            <div class="stat-pro-visual">
+              <svg width="42" height="42" viewBox="0 0 42 42">
+                <circle cx="21" cy="21" r="18" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2.5" />
+                <circle cx="21" cy="21" r="18" fill="none" stroke="url(#flameRingGrad)" stroke-width="2.8" stroke-dasharray="113" stroke-dashoffset="${Math.max(10, 113 - Math.min(100, ((stats.bestStreak || 1) / 7) * 113))}" stroke-linecap="round" transform="rotate(-90 21 21)" />
+                <defs>
+                  <linearGradient id="flameRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#ef4444" />
+                    <stop offset="50%" stop-color="#f97316" />
+                    <stop offset="100%" stop-color="#fbbf24" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div style="position: absolute; display: flex; align-items: center; justify-content: center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="filter: drop-shadow(0 0 5px rgba(249,115,22,0.9));">
+                  <path d="M12 2C9.5 5.5 8 8.5 8 11.5c0 1.2.3 2.3.8 3.2-1.3-.8-2.3-2.1-2.8-3.7C4.8 12.5 4 14.7 4 17c0 4.4 3.6 8 8 8s8-3.6 8-8c0-4-2.5-7.5-5-10.5-.5 2-1.5 3.5-3 4.5.3-2.5 0-5.5-2-9z" fill="url(#flameRingGrad)"/>
+                  <path d="M12 14c-1.5 1.5-2 3-2 4.5 0 2.2 1.8 3.5 3 3.5s3-1.3 3-3.5c0-1.8-1-3.2-2-4.5-.5-.7-1.5-.7-2 0z" fill="#fef08a"/>
+                </svg>
+              </div>
+            </div>
+            <div class="stat-pro-val" style="color: #fbbf24;">${stats.bestStreak}d</div>
+            <div class="stat-pro-lbl">Recorde Streak</div>
+            <span class="stat-pro-subtag" style="display: inline-flex; align-items: center; gap: 4px;">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z"/>
+              </svg>
+              Atual: ${stats.currentStreak}d
+            </span>
           </div>
-          <div class="stat-metric-card">
-            <div class="stat-metric-val">${stats.totalMinutes}m</div>
-            <div class="stat-metric-lbl">Minutos Totais</div>
+
+          <!-- Card 2: Dial Cósmico de Tempo (Minutos) -->
+          <div class="stat-metric-card-pro">
+            <div class="stat-pro-visual">
+              <svg width="42" height="42" viewBox="0 0 42 42">
+                <circle cx="21" cy="21" r="18" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2.5" />
+                <circle cx="21" cy="21" r="18" fill="none" stroke="url(#timeDialGrad)" stroke-width="2.8" stroke-dasharray="113" stroke-dashoffset="${Math.max(15, 113 - Math.min(100, ((stats.totalMinutes || 1) / 120) * 113))}" stroke-linecap="round" transform="rotate(-90 21 21)" />
+                <defs>
+                  <linearGradient id="timeDialGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#38bdf8" />
+                    <stop offset="100%" stop-color="#818cf8" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div style="position: absolute; display: flex; align-items: center; justify-content: center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7dd3fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 5px rgba(56,189,248,0.7));">
+                  <circle cx="12" cy="12" r="9" />
+                  <polyline points="12 6 12 12 15 15" />
+                </svg>
+              </div>
+            </div>
+            <div class="stat-pro-val">${stats.totalMinutes >= 60 ? (stats.totalMinutes / 60).toFixed(1) + 'h' : stats.totalMinutes + 'm'}</div>
+            <div class="stat-pro-lbl">Tempo Dedicado</div>
+            <span class="stat-pro-subtag" style="display: inline-flex; align-items: center; gap: 4px;">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="13" r="8"/>
+                <path d="M12 9v4l2.5 1.5"/>
+                <path d="M12 2v3"/>
+              </svg>
+              ~${stats.totalWorkouts > 0 ? Math.round(stats.totalMinutes / stats.totalWorkouts) : 0}m / ses
+            </span>
           </div>
-          <div class="stat-metric-card">
-            <div class="stat-metric-val" style="color: var(--night-blue-accent);">${stats.totalWorkouts}</div>
-            <div class="stat-metric-lbl">Sessões</div>
+
+          <!-- Card 3: Colunata / Templo de Sessões Batidas -->
+          <div class="stat-metric-card-pro">
+            <div class="stat-pro-visual">
+              <svg width="42" height="42" viewBox="0 0 42 42">
+                <circle cx="21" cy="21" r="18" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2.5" />
+                <circle cx="21" cy="21" r="18" fill="none" stroke="url(#pillarSessGrad)" stroke-width="2.8" stroke-dasharray="113" stroke-dashoffset="${Math.max(10, 113 - Math.min(100, ((stats.totalWorkouts || 1) / 10) * 113))}" stroke-linecap="round" transform="rotate(-90 21 21)" />
+                <defs>
+                  <linearGradient id="pillarSessGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#ec4899" />
+                    <stop offset="100%" stop-color="#a855f7" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div style="position: absolute; display: flex; align-items: center; justify-content: center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f472b6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 5px rgba(244,114,182,0.8));">
+                  <path d="M2 9.5L12 4l10 5.5v1H2v-1z" />
+                  <line x1="6" y1="11" x2="6" y2="18" />
+                  <line x1="12" y1="11" x2="12" y2="18" />
+                  <line x1="18" y1="11" x2="18" y2="18" />
+                  <line x1="2" y1="21" x2="22" y2="21" />
+                </svg>
+              </div>
+            </div>
+            <div class="stat-pro-val" style="color: #f472b6;">${stats.totalWorkouts}</div>
+            <div class="stat-pro-lbl">Sessões Batidas</div>
+            <span class="stat-pro-subtag" style="display: inline-flex; align-items: center; gap: 4px;">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f472b6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 9.5L12 4l10 5.5v1H2v-1z" />
+                <line x1="6" y1="11" x2="6" y2="18" />
+                <line x1="12" y1="11" x2="12" y2="18" />
+                <line x1="18" y1="11" x2="18" y2="18" />
+                <line x1="2" y1="21" x2="22" y2="21" />
+              </svg>
+              ${(stats.totalVolumeKg / 1000).toFixed(1)}t carga
+            </span>
           </div>
         </div>
 
@@ -1383,11 +2304,11 @@ class AgiteMeApp {
   // VIEW 5: ORÁCULO IA, PERFIL & CONFIGURAÇÕES
   // ==========================================
   renderOraculoView(container) {
-    const p = this.profile;
+    const p = this.profile || StorageService.getProfile();
     const stats = StorageService.getStats();
     const workoutHistory = StorageService.getHistory();
-    const imc = (p.weight / ((p.height / 100) * (p.height / 100))).toFixed(1);
-    const hasApiKey = Boolean(p.geminiApiKey && p.geminiApiKey.trim().length > 10);
+    const imc = (p.weight && p.height) ? (p.weight / ((p.height / 100) * (p.height / 100))).toFixed(1) : '22.0';
+    const hasApiKey = Boolean((p.geminiApiKey && p.geminiApiKey.trim().length > 10) || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY));
 
     // Formatador seguro de Markdown simples para o Chat
     const formatOracleMessageText = (raw) => {
@@ -1417,56 +2338,28 @@ class AgiteMeApp {
     };
 
     container.innerHTML = `
-      <div style="padding: 16px 18px;">
+      <div class="oracle-view-wrapper">
         <div style="margin-bottom: 10px;">
           <h2 style="font-family: var(--font-carved); font-size: 1.35rem; color: #fff; margin-bottom: 2px;">
-            ORÁCULO & PERFIL
+            ORÁCULO CÓSMICO
           </h2>
           <p style="font-size: 0.78rem; color: var(--concrete-300);">
-            Converse sobre sua rotina fitness com o Oráculo. Molde melhor o seu treino.
+            Converse sobre sua rotina, adaptação de cargas e biomecânica com o Oráculo.
           </p>
         </div>
 
-        <!-- Cartão de Perfil do Aluno (Posicionado no Topo) -->
-        <div class="stone-panel" style="margin-bottom: 14px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <div>
-              <h3 style="font-family: var(--font-carved); font-size: 1.1rem; color: #fff; margin: 0 0 2px;">${p.name}</h3>
-              <span style="font-size: 0.72rem; color: var(--baby-pink); font-weight: 600;">${p.goal.toUpperCase()} • ${p.frequency}x / SEMANA</span>
-            </div>
-            <button id="btn-edit-profile" style="background: rgba(255,255,255,0.06); border: 1px solid var(--concrete-600); color: #fff; border-radius: 8px; padding: 5px 12px; font-size: 0.72rem; cursor: pointer; font-weight: 600; transition: background 0.2s;">
-              Editar Perfil
-            </button>
-          </div>
-
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 8px;">
-            <div>
-              <div style="font-family: var(--font-hud); font-size: 1.05rem; color: #fff;">${p.weight} kg</div>
-              <div style="font-size: 0.65rem; color: var(--concrete-400);">Peso</div>
-            </div>
-            <div>
-              <div style="font-family: var(--font-hud); font-size: 1.05rem; color: #fff;">${p.height} cm</div>
-              <div style="font-size: 0.65rem; color: var(--concrete-400);">Altura</div>
-            </div>
-            <div>
-              <div style="font-family: var(--font-hud); font-size: 1.05rem; color: var(--neon-cyan);">${imc}</div>
-              <div style="font-size: 0.65rem; color: var(--concrete-400);">IMC</div>
-            </div>
-          </div>
-        </div>
-
         <!-- PAINEL DO ORÁCULO COM ABAS [ Conversa Atual ] [ Histórico de Chats ] -->
-        <div class="stone-panel oracle-chat-panel" style="margin-bottom: 20px;">
+        <div class="stone-panel oracle-chat-panel full-height-panel">
           
           <!-- Seletor de Abas no Topo do Oráculo (Opção A) -->
           <div class="oracle-subtabs-row" style="display: flex; gap: 6px; margin-bottom: 12px; background: rgba(0,0,0,0.4); padding: 4px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
-            <button id="btn-oracle-subtab-chat" class="oracle-subtab-btn ${this.currentOracleTab === 'chat' ? 'active' : ''}" style="flex: 1; padding: 8px 12px; border-radius: 9px; font-size: 0.74rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; background: ${this.currentOracleTab === 'chat' ? 'rgba(56,189,248,0.2)' : 'transparent'}; color: ${this.currentOracleTab === 'chat' ? '#38bdf8' : 'var(--concrete-400)'}; border: ${this.currentOracleTab === 'chat' ? '1px solid rgba(56,189,248,0.4)' : '1px solid transparent'};">
+            <button id="btn-oracle-subtab-chat" class="oracle-subtab-btn ${this.currentOracleTab === 'chat' ? 'active' : ''}" style="flex: 1; padding: 8px 12px; border-radius: 9px; font-size: 0.74rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; background: ${this.currentOracleTab === 'chat' ? 'rgba(255,255,255,0.14)' : 'transparent'}; color: ${this.currentOracleTab === 'chat' ? '#ffffff' : 'var(--concrete-400)'}; border: ${this.currentOracleTab === 'chat' ? '1px solid rgba(255,255,255,0.3)' : '1px solid transparent'};">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
               </svg>
               Conversa Atual
             </button>
-            <button id="btn-oracle-subtab-history" class="oracle-subtab-btn ${this.currentOracleTab === 'history' ? 'active' : ''}" style="flex: 1; padding: 8px 12px; border-radius: 9px; font-size: 0.74rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; background: ${this.currentOracleTab === 'history' ? 'rgba(244,114,182,0.2)' : 'transparent'}; color: ${this.currentOracleTab === 'history' ? 'var(--baby-pink)' : 'var(--concrete-400)'}; border: ${this.currentOracleTab === 'history' ? '1px solid rgba(244,114,182,0.4)' : '1px solid transparent'};">
+            <button id="btn-oracle-subtab-history" class="oracle-subtab-btn ${this.currentOracleTab === 'history' ? 'active' : ''}" style="flex: 1; padding: 8px 12px; border-radius: 9px; font-size: 0.74rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; background: ${this.currentOracleTab === 'history' ? 'rgba(255,255,255,0.14)' : 'transparent'}; color: ${this.currentOracleTab === 'history' ? '#ffffff' : 'var(--concrete-400)'}; border: ${this.currentOracleTab === 'history' ? '1px solid rgba(255,255,255,0.3)' : '1px solid transparent'};">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
@@ -1479,7 +2372,7 @@ class AgiteMeApp {
           <div id="oracle-view-chat" style="display: ${this.currentOracleTab === 'chat' ? 'block' : 'none'};">
             <div class="oracle-chat-header">
               <div style="display: flex; align-items: center; gap: 10px;">
-                <!-- Portal Cósmico com Anéis Giratórios e Gradiente -->
+                <!-- Portal Cósmico com Anéis Giratórios e Gradiente Rosa e Azul -->
                 <div class="cosmic-portal-orb" title="Portal do Oráculo Ativo">
                   <svg class="portal-vortex-svg" width="28" height="28" viewBox="0 0 28 28" fill="none">
                     <defs>
@@ -1490,7 +2383,7 @@ class AgiteMeApp {
                       </linearGradient>
                       <radialGradient id="portal-core-glow" cx="50%" cy="50%" r="50%">
                         <stop offset="0%" stop-color="#38bdf8"/>
-                        <stop offset="70%" stop-color="#a855f7"/>
+                        <stop offset="70%" stop-color="#f472b6"/>
                         <stop offset="100%" stop-color="transparent"/>
                       </radialGradient>
                     </defs>
@@ -1505,15 +2398,15 @@ class AgiteMeApp {
                   <div style="font-family: var(--font-hud); font-size: 0.88rem; color: #fff; letter-spacing: 0.8px;">
                     ORÁCULO
                   </div>
-                  <div style="font-size: 0.68rem; color: var(--neon-cyan);">
-                    Memória ativa • ${stats.currentStreak}d Streak • ${stats.totalWorkouts} treinos
+                  <div style="font-size: 0.68rem; color: var(--concrete-300);">
+                    Memória ativa • ${(p.name && p.name.trim()) ? p.name : 'Guerreiro'} • ${(p.hasConfiguredBio && p.weight) ? p.weight + 'kg • ' : ''}${stats.currentStreak}d Streak
                   </div>
                 </div>
               </div>
 
               <!-- Ações da Conversa Atual: Novo Chat (+) & Limpar -->
               <div style="display: flex; gap: 6px; align-items: center;">
-                <button id="btn-new-oracle-chat" title="Iniciar Nova Conversa (arquiva a atual no histórico)" style="background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.35); color: #38bdf8; border-radius: 6px; padding: 4px 8px; font-size: 0.68rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+                <button id="btn-new-oracle-chat" title="Iniciar Nova Conversa (arquiva a atual no histórico)" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.22); color: #ffffff; border-radius: 6px; padding: 4px 8px; font-size: 0.68rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
                   <span style="font-weight: 900; font-size: 0.8rem;">+</span> Novo Chat
                 </button>
                 <button id="btn-clear-chat" title="Limpar conversa atual" class="oracle-chat-clear-btn">
@@ -1528,20 +2421,40 @@ class AgiteMeApp {
 
             <!-- Chips de Perguntas Rápidas -->
             <div class="oracle-chips-slider">
-              <button class="oracle-prompt-chip" data-prompt="⚡ O que treinar hoje?">
-                ⚡ O que treinar hoje?
+              <button class="oracle-prompt-chip" data-prompt="O que treinar hoje?">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polygon points="12 8 8 12 12 16 12 8"/>
+                </svg>
+                O que treinar hoje?
               </button>
-              <button class="oracle-prompt-chip" data-prompt="🏋️ Como progredir carga nos exercícios?">
-                🏋️ Dicas de Carga
+              <button class="oracle-prompt-chip" data-prompt="Como progredir carga nos exercícios com segurança?">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 5v14M18 5v14M2 9v6M22 9v6M2 12h20"/>
+                </svg>
+                Dicas de Carga
               </button>
-              <button class="oracle-prompt-chip" data-prompt="🥩 Quanto de proteína e água devo consumir para o meu peso?">
-                🥩 Proteína & Dieta
+              <button class="oracle-prompt-chip" data-prompt="Quanto de proteína e água devo consumir para o meu peso?">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2a5 5 0 0 1 5 5c0 5-5 13-5 13S7 12 7 7a5 5 0 0 1 5-5z"/>
+                </svg>
+                Proteína & Dieta
               </button>
-              <button class="oracle-prompt-chip" data-prompt="🩹 Dor muscular pós-treino vs lesão: como diferenciar?">
-                🩹 Dor vs Lesão
+              <button class="oracle-prompt-chip" data-prompt="Dor muscular pós-treino vs lesão: como diferenciar?">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                Dor vs Lesão
               </button>
-              <button class="oracle-prompt-chip" data-prompt="📊 Como está meu histórico e evolução no templo?">
-                📊 Meu Progresso
+              <button class="oracle-prompt-chip" data-prompt="Como está meu histórico e evolução no templo?">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="20" x2="18" y2="10"/>
+                  <line x1="12" y1="20" x2="12" y2="4"/>
+                  <line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+                Meu Progresso
               </button>
             </div>
 
@@ -1590,7 +2503,17 @@ class AgiteMeApp {
         if (sessions.length === 0) {
           return `
                     <div style="text-align: center; padding: 36px 16px; background: rgba(0,0,0,0.25); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.1);">
-                      <div style="font-size: 1.8rem; margin-bottom: 8px;">📜</div>
+                      <div style="display: flex; justify-content: center; margin-bottom: 8px;">
+                        <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); display: flex; align-items: center; justify-content: center;">
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 8 9"/>
+                          </svg>
+                        </div>
+                      </div>
                       <div style="font-size: 0.86rem; color: #fff; font-weight: 700; margin-bottom: 4px;">Nenhum chat arquivado ainda</div>
                       <p style="font-size: 0.72rem; color: var(--concrete-300); line-height: 1.4; max-width: 320px; margin: 0 auto 14px;">
                         Quando você conversar com o Oráculo e clicar em <strong>+ Novo Chat</strong>, sua conversa anterior ficará guardada aqui para você reler quando quiser!
@@ -1609,8 +2532,11 @@ class AgiteMeApp {
                         <div class="stone-panel oracle-history-item-card" data-session-id="${sess.id}" style="border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 10px; background: rgba(15,23,42,0.6);">
                           <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px;">
                             <div style="flex: 1; min-width: 0;">
-                              <h4 style="font-size: 0.84rem; color: #fff; font-weight: 700; margin: 0 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                💬 ${sess.title}
+                              <h4 style="font-size: 0.84rem; color: #fff; font-weight: 700; margin: 0 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px;">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                <span>${sess.title}</span>
                               </h4>
                               <div style="font-size: 0.67rem; color: var(--concrete-400);">
                                 ${sess.createdAt} • ${sess.messagesCount || sess.messages.length} mensagens
@@ -1688,10 +2614,17 @@ class AgiteMeApp {
     });
 
     container.querySelectorAll('.btn-delete-session').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const sessId = btn.getAttribute('data-session-id');
-        if (confirm('Deseja excluir esta conversa do histórico?')) {
+        const ok = await this.showCosmicConfirm({
+          title: 'EXCLUIR CONVERSA',
+          message: 'Deseja excluir esta conversa do histórico do Oráculo?',
+          confirmText: 'Excluir',
+          cancelText: 'Cancelar',
+          isDestructive: true
+        });
+        if (ok) {
           StorageService.deleteChatSession(sessId);
           this.renderOraculoView(container);
         }
@@ -1700,8 +2633,15 @@ class AgiteMeApp {
 
     const btnClearAllSessions = container.querySelector('#btn-clear-all-sessions');
     if (btnClearAllSessions) {
-      btnClearAllSessions.addEventListener('click', () => {
-        if (confirm('Deseja apagar todas as conversas do histórico?')) {
+      btnClearAllSessions.addEventListener('click', async () => {
+        const ok = await this.showCosmicConfirm({
+          title: 'LIMPAR TODO O HISTÓRICO',
+          message: 'Deseja apagar permanentemente todas as conversas salvas no templo?',
+          confirmText: 'Apagar Todas',
+          cancelText: 'Cancelar',
+          isDestructive: true
+        });
+        if (ok) {
           StorageService.clearAllChatSessions();
           this.renderOraculoView(container);
         }
@@ -1716,11 +2656,13 @@ class AgiteMeApp {
 
     // Se estiver vazio, inicia com mensagem de boas-vindas acolhedora do Oráculo
     if (!chatHistory || chatHistory.length === 0) {
+      const warriorName = (p.name && p.name.trim()) ? p.name : 'do Templo';
+      const warriorGoal = p.goal || 'hipertrofia';
       chatHistory = [
         {
           id: 'msg-welcome',
           sender: 'oracle',
-          text: `Saudações, guerreiro(a) **${p.name}**! Eu sou o Oráculo do Templo Cósmico.\n\nTenho acesso à sua biometria (**${p.weight}kg**, foco em **${p.goal}**), aos seus **${stats.currentStreak} dias de sequência** e ao seu histórico no templo. Como posso guiar seu treino ou sua evolução hoje?`,
+          text: `Saudações, guerreiro(a) **${warriorName}**! Eu sou o Oráculo do Templo Cósmico.\n\nTenho acesso à sua biometria (**${p.weight || 75}kg**, foco em **${warriorGoal}**), aos seus **${stats.currentStreak} dias de sequência** e ao seu histórico no templo. Como posso guiar seu treino ou sua evolução hoje?`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           source: hasApiKey ? 'gemini' : 'local'
         }
@@ -1735,18 +2677,25 @@ class AgiteMeApp {
         return `
           <div class="oracle-msg-bubble ${isUser ? 'from-user' : 'from-oracle'}">
             <div class="oracle-msg-meta">
-              <span class="oracle-msg-sender">${isUser ? 'Você' : 'Oráculo ✨'}</span>
+              <span class="oracle-msg-sender">${isUser ? 'Você' : 'Oráculo'}</span>
               <span class="oracle-msg-time">${msg.timestamp || ''}</span>
             </div>
             <div class="oracle-msg-text">
               ${formatOracleMessageText(msg.text)}
+              ${msg.actionHtml || ''}
             </div>
             ${!isUser && msg.source === 'gemini' ? `
-              <div class="oracle-msg-badge-source">⚡ Resposta via Gemini 1.5</div>
+              <div class="oracle-msg-badge-source"> Resposta criada pelo Gemini. Certifique-se sempre de consultar outras fontes.</div>
             ` : ''}
           </div>
         `;
       }).join('');
+
+      messagesContainer.querySelectorAll('.action-view-routine-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          this.switchTab('treino');
+        });
+      });
 
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     };
@@ -1815,6 +2764,7 @@ class AgiteMeApp {
       }
 
       try {
+        const currentRoutines = StorageService.getRoutines();
         const response = await GeminiService.askOracleChat({
           userMessage: trimmed,
           chatHistory,
@@ -1822,6 +2772,7 @@ class AgiteMeApp {
           workoutHistory,
           activeSession: this.activeSession,
           stats,
+          routines: currentRoutines,
           apiKey: this.profile.geminiApiKey || (import.meta.env?.VITE_GEMINI_API_KEY || '')
         });
 
@@ -1829,10 +2780,61 @@ class AgiteMeApp {
         const currentThinking = container.querySelector('#oracle-thinking-bubble');
         if (currentThinking) currentThinking.remove();
 
+        let responseText = response.text || '';
+        let actionCardHtml = '';
+
+        // Detecção e Execução de Ação de Troca de Exercício
+        const actionMatch = responseText.match(/\[ACTION:SWAP_EXERCISE\s+routineId="([^"]+)"\s+oldExerciseId="([^"]+)"\s+newExerciseId="([^"]+)"\]/);
+        if (actionMatch) {
+          const [fullTag, routineId, oldExId, newExId] = actionMatch;
+          responseText = responseText.replace(fullTag, '').trim();
+
+          // Executa a mutação na persistência do treino
+          const updatedRoutine = StorageService.swapExerciseInRoutine(routineId, oldExId, newExId);
+
+          // Se houver treino ativo correspondente, atualiza a sessão imediatamente
+          if (this.activeSession && (this.activeSession.routineId === routineId || (this.activeSession.exercises || []).some(e => e.exerciseId === oldExId))) {
+            const actEx = this.activeSession.exercises.find(e => e.exerciseId === oldExId);
+            const newExObj = EXERCISES.find(e => e.id === newExId);
+            if (actEx && newExObj) {
+              actEx.exerciseId = newExObj.id;
+              actEx.exerciseName = newExObj.name;
+              actEx.exerciseEquipment = newExObj.equipment;
+              StorageService.saveActiveSession(this.activeSession);
+            }
+          }
+
+          const oldExObj = EXERCISES.find(e => e.id === oldExId);
+          const newExObj = EXERCISES.find(e => e.id === newExId);
+          const routineTitle = updatedRoutine ? updatedRoutine.title : (routineId === 'portal-a' ? 'Portal Alpha' : routineId === 'portal-b' ? 'Portal Beta' : 'Portal Gamma');
+
+          actionCardHtml = `
+            <div class="oracle-action-card">
+              <div class="action-card-top">
+                <span class="action-badge-tag">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  TREINO ATUALIZADO COM SUCESSO
+                </span>
+                <span class="action-routine-code">${routineTitle}</span>
+              </div>
+              <div class="action-swap-flow">
+                <span class="action-ex-pill old">${oldExObj ? oldExObj.name : oldExId}</span>
+                <span class="action-swap-arrow">➔</span>
+                <span class="action-ex-pill new">${newExObj ? newExObj.name : newExId}</span>
+              </div>
+              <div class="action-card-footer">
+                <span>Modificação sincronizada à sua ficha</span>
+                <button class="action-view-routine-btn" type="button" data-go-tab="treino">Ver no Treino</button>
+              </div>
+            </div>
+          `;
+        }
+
         const oracleMsg = {
           id: 'msg-' + Date.now(),
           sender: 'oracle',
-          text: response.text,
+          text: responseText,
+          actionHtml: actionCardHtml,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           source: response.source || 'local'
         };
@@ -1890,8 +2892,15 @@ class AgiteMeApp {
     // Limpar histórico da conversa ativa
     const btnClearChat = container.querySelector('#btn-clear-chat');
     if (btnClearChat) {
-      btnClearChat.addEventListener('click', () => {
-        if (confirm('Deseja limpar as mensagens da conversa atual?')) {
+      btnClearChat.addEventListener('click', async () => {
+        const ok = await this.showCosmicConfirm({
+          title: 'LIMPAR CONVERSA',
+          message: 'Deseja apagar todas as mensagens da conversa atual?',
+          confirmText: 'Limpar Mensagens',
+          cancelText: 'Cancelar',
+          isDestructive: true
+        });
+        if (ok) {
           StorageService.clearChatHistory();
           chatHistory = [];
           this.renderOraculoView(container);
@@ -2035,8 +3044,197 @@ class AgiteMeApp {
     });
   }
 
+  // Modal Didático: Sistema de Honra (Patentes vs Insígnias)
+  openHonorSystemModal() {
+    const modalContainer = document.querySelector('#modal-container');
+    const stats = StorageService.getStats();
+    const workouts = stats.totalWorkouts || 0;
+
+    let currentGrade = 1;
+    if (workouts >= 30) currentGrade = 4;
+    else if (workouts >= 15) currentGrade = 3;
+    else if (workouts >= 5) currentGrade = 2;
+
+    const ranksConfig = [
+      {
+        grade: 1,
+        title: 'Iniciado',
+        color: '#38bdf8',
+        range: '0 a 4 treinos',
+        minWorkouts: 0,
+        svg: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(56,189,248,0.2)"/>
+          <path d="M12 8v8"/>
+          <path d="M8 12h8"/>
+        </svg>`
+      },
+      {
+        grade: 2,
+        title: 'Guerreiro de Aço',
+        color: '#fbbf24',
+        range: '5 a 14 treinos',
+        minWorkouts: 5,
+        svg: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="6" y1="18" x2="18" y2="6"/>
+          <polyline points="13 6 18 6 18 11"/>
+          <line x1="4" y1="16" x2="8" y2="20"/>
+          <line x1="18" y1="18" x2="6" y2="6"/>
+          <polyline points="11 6 6 6 6 11"/>
+          <line x1="20" y1="16" x2="16" y2="20"/>
+        </svg>`
+      },
+      {
+        grade: 3,
+        title: 'Guardião do Templo',
+        color: '#ec4899',
+        range: '15 a 29 treinos',
+        minWorkouts: 15,
+        svg: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 9.5L12 4l10 5.5v1H2v-1z" fill="rgba(236,72,153,0.2)"/>
+          <line x1="6" y1="11" x2="6" y2="18"/>
+          <line x1="10" y1="11" x2="10" y2="18"/>
+          <line x1="14" y1="11" x2="14" y2="18"/>
+          <line x1="18" y1="11" x2="18" y2="18"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+          <line x1="2" y1="21" x2="22" y2="21"/>
+        </svg>`
+      },
+      {
+        grade: 4,
+        title: 'Titã',
+        color: '#c084fc',
+        range: '30+ treinos',
+        minWorkouts: 30,
+        svg: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="rgba(192,132,252,0.3)"/>
+        </svg>`
+      }
+    ];
+
+    modalContainer.innerHTML = `
+      <div class="honor-modal-overlay" id="honor-system-overlay">
+        <div class="honor-modal-sheet" id="honor-system-sheet">
+          <div class="modal-handle-bar"></div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  <path d="M12 8v8"/>
+                  <path d="M8 12h8"/>
+                </svg>
+              </div>
+              <div>
+                <h3 style="font-family: var(--font-carved); font-size: 1.15rem; color: #fff; margin: 0;">SISTEMA DE HONRA</h3>
+                <small style="color: var(--neon-cyan); font-size: 0.68rem; letter-spacing: 0.5px;">PATENTES VS. INSÍGNIAS</small>
+              </div>
+            </div>
+            <button id="btn-close-honor-modal" style="background: none; border: none; color: var(--concrete-400); font-size: 1.6rem; cursor: pointer; line-height: 1;">&times;</button>
+          </div>
+
+          <!-- Comparativo Didático -->
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px;">
+            <div style="font-size: 0.8rem; color: #fff; font-weight: 700; margin-bottom: 6px;">Qual a diferença entre Patente e Insígnia?</div>
+            <div style="font-size: 0.74rem; color: var(--concrete-300); line-height: 1.5;">
+              • <strong style="color: #38bdf8;">Patente</strong>: É a sua <strong>graduação marcial contínua</strong> (seu nível geral). Conforme você bate treinos no templo, seu nível sobe e o brasão ganha novas formas e metais sagrados.<br/><br/>
+              • <strong style="color: #ec4899;">Insígnias</strong>: São <strong>conquistas e medalhas de honra</strong> desbloqueadas por cumprir façanhas pontuais (ex: bater o 1º treino, acumular 5 toneladas, manter 3 dias de streak, etc.).
+            </div>
+          </div>
+
+          <!-- Os 4 Graus Dinâmicos com Movimento -->
+          <div style="margin-bottom: 18px;">
+            <div style="font-family: var(--font-hud); font-size: 0.72rem; color: var(--concrete-400); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px;">
+              AS 4 PATENTES CÓSMICAS
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              ${ranksConfig.map(r => {
+                const isCurrent = r.grade === currentGrade;
+                const isAchieved = workouts >= r.minWorkouts;
+                const missing = r.minWorkouts - workouts;
+                return `
+                  <div class="degree-rank-card ${isCurrent ? 'is-current' : ''}" data-degree-card="${r.grade}" style="--deg-color: ${r.color}; --deg-glow: ${r.color}50;" title="Toque para sentir a energia do grau">
+                    <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                      <div class="degree-icon-slot deg-${r.grade}">
+                        ${r.svg}
+                      </div>
+                      <div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                          <span style="font-size: 0.65rem; color: ${r.color}; font-weight: 700; font-family: var(--font-hud); letter-spacing: 0.5px;">
+                            GRAU ${r.grade}
+                          </span>
+                          <span style="font-size: 0.65rem; color: var(--concrete-500);">• ${r.range}</span>
+                        </div>
+                        <div style="font-family: var(--font-serif); font-size: 1.02rem; font-weight: 700; color: #fff; margin-top: 1px;">
+                          ${r.title}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style="flex-shrink: 0; text-align: right;">
+                      ${isCurrent ? `
+                        <span class="degree-current-pill">PATENTE ATUAL</span>
+                      ` : isAchieved ? `
+                        <span style="color: #34d399; font-size: 0.68rem; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          Conquistado
+                        </span>
+                      ` : `
+                        <span style="font-size: 0.66rem; color: var(--concrete-400); display: inline-flex; align-items: center; gap: 4px;">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                          Faltam ${missing}
+                        </span>
+                      `}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <button id="btn-close-honor-modal-action" class="btn-enter-temple" style="width: 100%; padding: 12px; font-size: 0.82rem; font-weight: 700;">
+            ENTENDI!
+          </button>
+        </div>
+      </div>
+    `;
+
+    const close = () => {
+      sound.playTapSound();
+      const overlay = modalContainer.querySelector('#honor-system-overlay');
+      const sheet = modalContainer.querySelector('#honor-system-sheet');
+      if (overlay) {
+        overlay.style.transition = 'opacity 0.2s ease';
+        overlay.style.opacity = '0';
+        if (sheet) {
+          sheet.style.transition = 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease';
+          sheet.style.transform = 'scale(0.88) translateY(18px)';
+          sheet.style.opacity = '0';
+        }
+        setTimeout(() => { modalContainer.innerHTML = ''; }, 200);
+      } else {
+        modalContainer.innerHTML = '';
+      }
+    };
+
+    modalContainer.querySelector('#btn-close-honor-modal')?.addEventListener('click', close);
+    modalContainer.querySelector('#btn-close-honor-modal-action')?.addEventListener('click', close);
+    modalContainer.querySelector('#honor-system-overlay')?.addEventListener('click', (e) => {
+      if (e.target.id === 'honor-system-overlay') close();
+    });
+
+    modalContainer.querySelectorAll('.degree-rank-card').forEach(card => {
+      card.addEventListener('click', () => {
+        sound.playTapSound();
+        if ('vibrate' in navigator) navigator.vibrate([20, 30]);
+        card.style.transform = 'scale(1.03) translateY(-2px)';
+        setTimeout(() => { card.style.transform = ''; }, 200);
+      });
+    });
+  }
+
   // ==========================================
-  // MODAIS (PERFIL, FOTO COM AURA & AUTENTICAÇÃO SUPABASE)
+  // MODAIS
   // ==========================================
   openProfileManagerModal() {
     const modalContainer = document.querySelector('#modal-container');
@@ -2068,66 +3266,170 @@ class AgiteMeApp {
     const initialHue = hsl.h;
     const initialLight = Math.max(30, Math.min(85, hsl.l));
 
+    let selectedAura = aura;
+    let selectedGoal = p.goal || 'hipertrofia';
+    let selectedFreq = p.frequency || 4;
+
     modalContainer.innerHTML = `
       <div class="modal-overlay" id="profile-manager-overlay">
         <div class="modal-sheet stone-panel profile-manager-sheet" style="max-width: 440px;">
           <div class="modal-handle-bar"></div>
 
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <!-- Cabeçalho do Modal -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 1.3rem;">🏛️</span>
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); display: flex; align-items: center; justify-content: center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </div>
               <div>
                 <h3 style="font-family: var(--font-carved); font-size: 1.05rem; color: #fff; margin: 0;">
-                  Sua aura você que escolhe
+                  EDITAR PERFIL DO GUERREIRO
                 </h3>
-                <small style="color: var(--baby-pink); font-size: 0.68rem;">Edite aqui algumas personalizações do seu perfil</small>
+                <small style="color: var(--neon-cyan); font-size: 0.68rem;">Personalize suas métricas, foto e aura do templo</small>
               </div>
             </div>
             <button id="btn-close-profile-manager" style="background: none; border: none; color: var(--concrete-400); font-size: 1.6rem; cursor: pointer;">&times;</button>
           </div>
 
-          <!-- Destaque do Avatar Atual com Aura Viva -->
-          <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 0 14px;">
-            <div class="avatar-aura-slot" style="width: 78px; height: 78px; cursor: default;">
+          <!-- 1. Destaque do Avatar Atual com Aura Viva -->
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 4px 0 12px;">
+            <div class="avatar-aura-slot" style="width: 74px; height: 74px; cursor: default;">
               <div class="avatar-aura-ring" id="modal-preview-aura-ring" style="background: ${aura}; box-shadow: 0 0 20px ${aura}; inset: -5px;"></div>
               <div class="avatar-photo-circle" id="modal-preview-avatar-circle" style="border-width: 2px;">
                 ${p.avatarUrl
-        ? `<img src="${p.avatarUrl}" alt="${p.name}" />`
-        : `<span class="avatar-initials-fallback" style="font-size: 1.6rem;">${(p.name || 'G')[0]}</span>`}
+        ? `<img src="${p.avatarUrl}" alt="${p.name || 'Avatar'}" />`
+        : `<span class="avatar-initials-fallback" style="font-size: 1.5rem;">${(p.name && p.name.trim()) ? p.name.trim()[0].toUpperCase() : '?'}</span>`}
               </div>
             </div>
 
-            <div style="text-align: center;">
-              <h2 style="font-family: var(--font-carved); font-size: 1.2rem; color: #fff; margin: 0 0 2px;">${p.name}</h2>
-              <span style="font-size: 0.72rem; color: var(--neon-cyan); font-weight: 600;">
-                 ${stats.currentStreak} dias seguidos • ${p.weight} kg • ${p.goal.toUpperCase()}
-              </span>
-            </div>
-
-            <div style="display: flex; gap: 8px; margin-top: 4px;">
-              <button class="btn-enter-temple" id="btn-pick-avatar-modal" style="padding: 8px 14px; font-size: 0.76rem;">
+            <div style="display: flex; gap: 8px; margin-top: 2px;">
+              <button class="btn-enter-temple" id="btn-pick-avatar-modal" style="padding: 6px 14px; font-size: 0.74rem;">
                 Escolher Foto
               </button>
               ${p.avatarUrl ? `
-                <button id="btn-remove-avatar-modal" style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5; border-radius: 8px; padding: 8px 12px; font-size: 0.72rem; cursor: pointer;">
+                <button id="btn-remove-avatar-modal" style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5; border-radius: 8px; padding: 6px 12px; font-size: 0.72rem; cursor: pointer;">
                   Remover
                 </button>
               ` : ''}
             </div>
           </div>
 
-          <!-- Escolha da Aura Cósmica com Paleta Ampliada (17 Tonalidades + Custom Touch) -->
-          <div style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 12px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.08);">
+          <!-- 2. Formulário de Métricas Físicas e Identidade -->
+          <div style="background: rgba(0,0,0,0.3); border-radius: 12px; padding: 14px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 12px;">
+            <!-- Campo Nome -->
+            <div>
+              <label style="display: block; font-size: 0.68rem; color: var(--concrete-300); font-weight: 700; text-transform: uppercase; margin-bottom: 5px; font-family: var(--font-hud); letter-spacing: 0.5px;">
+                Nome do Guerreiro
+              </label>
+              <input 
+                type="text" 
+                id="profile-edit-name" 
+                value="${p.name || ''}" 
+                placeholder="Como deseja ser chamado(a)?" 
+                style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 9px 12px; border-radius: 8px; font-size: 0.84rem; outline: none;"
+              />
+            </div>
+
+            <!-- Grid Peso e Altura -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div>
+                <label style="display: block; font-size: 0.68rem; color: var(--concrete-300); font-weight: 700; text-transform: uppercase; margin-bottom: 5px; font-family: var(--font-hud); letter-spacing: 0.5px;">
+                  Peso (kg)
+                </label>
+                <input 
+                  type="number" 
+                  id="profile-edit-weight" 
+                  value="${(p.hasConfiguredBio && p.weight) ? p.weight : (p.weight || '')}" 
+                  placeholder="Ex: 75" 
+                  min="30" 
+                  max="250" 
+                  step="0.5"
+                  style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 9px 12px; border-radius: 8px; font-size: 0.84rem; outline: none;"
+                />
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 0.68rem; color: var(--concrete-300); font-weight: 700; text-transform: uppercase; margin-bottom: 5px; font-family: var(--font-hud); letter-spacing: 0.5px;">
+                  Altura (cm)
+                </label>
+                <input 
+                  type="number" 
+                  id="profile-edit-height" 
+                  value="${(p.hasConfiguredBio && p.height) ? p.height : (p.height || '')}" 
+                  placeholder="Ex: 178" 
+                  min="100" 
+                  max="240" 
+                  step="1"
+                  style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 9px 12px; border-radius: 8px; font-size: 0.84rem; outline: none;"
+                />
+              </div>
+            </div>
+
+            <!-- Objetivo Principal -->
+            <div>
+              <label style="display: block; font-size: 0.68rem; color: var(--concrete-300); font-weight: 700; text-transform: uppercase; margin-bottom: 6px; font-family: var(--font-hud); letter-spacing: 0.5px;">
+                Objetivo do Treino
+              </label>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;" id="profile-edit-goal-chips">
+                ${[
+                  { key: 'hipertrofia', label: 'Hipertrofia' },
+                  { key: 'emagrecimento', label: 'Definição' },
+                  { key: 'forca', label: 'Força Bruta' },
+                  { key: 'condicionamento', label: 'Condicionamento' }
+                ].map(g => {
+                  const isSel = selectedGoal === g.key;
+                  return `
+                    <button 
+                      type="button" 
+                      class="profile-goal-btn" 
+                      data-goal="${g.key}"
+                      style="padding: 8px; border-radius: 8px; font-size: 0.74rem; font-weight: 600; cursor: pointer; text-align: center; border: 1px solid ${isSel ? 'var(--neon-cyan)' : 'rgba(255,255,255,0.12)'}; background: ${isSel ? 'rgba(56,189,248,0.18)' : 'rgba(255,255,255,0.03)'}; color: ${isSel ? '#fff' : 'var(--concrete-300)'}; transition: all 0.2s;"
+                    >
+                      ${g.label}
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+
+            <!-- Frequência Semanal -->
+            <div>
+              <label style="display: block; font-size: 0.68rem; color: var(--concrete-300); font-weight: 700; text-transform: uppercase; margin-bottom: 6px; font-family: var(--font-hud); letter-spacing: 0.5px;">
+                Frequência Semanal
+              </label>
+              <div style="display: flex; gap: 6px;" id="profile-edit-freq-chips">
+                ${[2, 3, 4, 5, 6].map(freq => {
+                  const isSel = selectedFreq === freq;
+                  return `
+                    <button 
+                      type="button" 
+                      class="profile-freq-btn" 
+                      data-freq="${freq}"
+                      style="flex: 1; padding: 7px 4px; border-radius: 8px; font-size: 0.74rem; font-weight: 700; cursor: pointer; text-align: center; border: 1px solid ${isSel ? 'var(--baby-pink)' : 'rgba(255,255,255,0.12)'}; background: ${isSel ? 'rgba(236,72,153,0.18)' : 'rgba(255,255,255,0.03)'}; color: ${isSel ? '#fff' : 'var(--concrete-300)'}; transition: all 0.2s;"
+                    >
+                      ${freq}x
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Escolha da Aura Cósmica (17 Tonalidades + Custom Touch) -->
+          <div style="background: rgba(0,0,0,0.3); border-radius: 12px; padding: 12px; margin-bottom: 14px; border: 1px solid rgba(255,255,255,0.08);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px;">
-              <span style="font-size: 0.68rem; color: var(--concrete-300); font-weight: 700; text-transform: uppercase;">
+              <span style="font-size: 0.68rem; color: var(--concrete-300); font-weight: 700; text-transform: uppercase; font-family: var(--font-hud); letter-spacing: 0.5px;">
                 COR DA SUA AURA:
               </span>
               <span id="aura-current-hex-label" style="font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: ${aura}; font-weight: 700; letter-spacing: 0.5px;">${aura.toUpperCase()}</span>
             </div>
             <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; max-width: 250px; margin: 0 auto; justify-items: center; align-items: center; padding: 4px 0;">
               ${AURA_PRESETS.map(a => {
-          const isSelected = aura.toLowerCase() === a.color.toLowerCase();
-          return `
+                const isSelected = aura.toLowerCase() === a.color.toLowerCase();
+                return `
                   <button 
                     class="aura-color-btn" 
                     data-aura="${a.color}" 
@@ -2135,27 +3437,15 @@ class AgiteMeApp {
                     title="${a.label}"
                   ></button>
                 `;
-        }).join('')}
-              <!-- Botão + para abrir seletor touch integrado -->
+              }).join('')}
+              <!-- Botão + para seletor touch integrado -->
               <div style="position: relative; display: inline-flex; align-items: center; justify-content: center;">
                 <button 
                   class="aura-custom-plus-btn" 
                   id="btn-custom-aura-color" 
                   type="button"
                   title="Ajuste Touch da Aura (+)"
-                  style="width: 27px; height: 27px; border-radius: 50%; background: ${isCustomAura
-        ? aura
-        : 'conic-gradient(from 180deg at 50% 50%, #f43f5e 0deg, #fbbf24 60deg, #10b981 120deg, #38bdf8 180deg, #818cf8 240deg, #f472b6 300deg, #f43f5e 360deg)'
-      }; border: ${isCustomAura
-        ? '2.5px solid #fff'
-        : '1.5px solid rgba(255,255,255,0.7)'
-      }; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 0 ${isCustomAura
-        ? '16px ' + aura
-        : '8px rgba(255,255,255,0.3)'
-      }; transform: ${isCustomAura
-        ? 'scale(1.15)'
-        : 'scale(1)'
-      };"
+                  style="width: 27px; height: 27px; border-radius: 50%; background: ${isCustomAura ? aura : 'conic-gradient(from 180deg at 50% 50%, #f43f5e 0deg, #fbbf24 60deg, #10b981 120deg, #38bdf8 180deg, #818cf8 240deg, #f472b6 300deg, #f43f5e 360deg)'}; border: ${isCustomAura ? '2.5px solid #fff' : '1.5px solid rgba(255,255,255,0.7)'}; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 0 ${isCustomAura ? '16px ' + aura : '8px rgba(255,255,255,0.3)'}; transform: ${isCustomAura ? 'scale(1.15)' : 'scale(1)'};"
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8));">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -2165,7 +3455,7 @@ class AgiteMeApp {
               </div>
             </div>
 
-            <!-- Painel Integrado Mobile/Touch (Sem popups invasivos) -->
+            <!-- Painel Integrado Mobile/Touch -->
             <div id="aura-inline-custom-panel" style="display: ${isCustomAura ? 'block' : 'none'}; margin-top: 12px; padding: 10px 12px; background: rgba(0,0,0,0.45); border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <span style="font-size: 0.68rem; color: var(--neon-cyan); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Faça a sua cor</span>
@@ -2203,8 +3493,15 @@ class AgiteMeApp {
             </div>
           </div>
 
+          <!-- 4. BOTÃO PRINCIPAL DE SALVAMENTO -->
+          <button id="btn-save-full-profile" class="btn-enter-temple" style="width: 100%; padding: 13px; font-size: 0.88rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            SALVAR ALTERAÇÕES DO PERFIL
+          </button>
 
-          <!-- Sincronização em Nuvem Supabase -->
+          <!-- 5. Sincronização em Nuvem Supabase -->
           <div style="background: rgba(15,23,42,0.7); border-radius: 10px; padding: 12px; border: 1px solid rgba(56,189,248,0.25);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
               <div style="font-size: 0.78rem; font-weight: 700; color: #fff;">
@@ -2219,21 +3516,13 @@ class AgiteMeApp {
         ? `Logado como: <strong>${this.supabaseUser.email}</strong>`
         : 'Você está no modo local. Faça login para salvar seus dados na nuvem.'}
             </p>
-            <div style="display: flex; gap: 8px;">
-              <button 
-                id="btn-open-supabase-auth" 
-                class="btn-finish-workout" 
-                style="flex: 1; padding: 10px; font-size: 0.78rem; background: ${this.supabaseUser ? 'rgba(239,68,68,0.2)' : 'rgba(56,189,248,0.25)'}; border-color: ${this.supabaseUser ? 'rgba(239,68,68,0.5)' : 'rgba(56,189,248,0.5)'}; color: #fff;"
-              >
-                ${this.supabaseUser ? 'Sair da Minha Conta' : 'Fazer Login ou criar uma conta'}
-              </button>
-              <button 
-                id="btn-edit-bio-quick" 
-                style="background: rgba(255,255,255,0.06); border: 1px solid var(--concrete-600); color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 0.74rem; cursor: pointer;"
-              >
-                Editar perfil
-              </button>
-            </div>
+            <button 
+              id="btn-open-supabase-auth" 
+              class="btn-finish-workout" 
+              style="width: 100%; padding: 10px; font-size: 0.78rem; background: ${this.supabaseUser ? 'rgba(239,68,68,0.2)' : 'rgba(56,189,248,0.25)'}; border-color: ${this.supabaseUser ? 'rgba(239,68,68,0.5)' : 'rgba(56,189,248,0.5)'}; color: #fff;"
+            >
+              ${this.supabaseUser ? 'Sair da Minha Conta' : 'Fazer Login ou criar uma conta'}
+            </button>
           </div>
         </div>
       </div>
@@ -2243,6 +3532,67 @@ class AgiteMeApp {
     modalContainer.querySelector('#btn-close-profile-manager').addEventListener('click', close);
     modalContainer.querySelector('#profile-manager-overlay').addEventListener('click', (e) => {
       if (e.target.id === 'profile-manager-overlay') close();
+    });
+
+    // Seletor de Objetivo (chips)
+    modalContainer.querySelectorAll('.profile-goal-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedGoal = btn.getAttribute('data-goal');
+        modalContainer.querySelectorAll('.profile-goal-btn').forEach(b => {
+          const isTarget = b === btn;
+          b.style.borderColor = isTarget ? 'var(--neon-cyan)' : 'rgba(255,255,255,0.12)';
+          b.style.background = isTarget ? 'rgba(56,189,248,0.18)' : 'rgba(255,255,255,0.03)';
+          b.style.color = isTarget ? '#fff' : 'var(--concrete-300)';
+        });
+      });
+    });
+
+    // Seletor de Frequência (chips)
+    modalContainer.querySelectorAll('.profile-freq-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedFreq = parseInt(btn.getAttribute('data-freq'), 10);
+        modalContainer.querySelectorAll('.profile-freq-btn').forEach(b => {
+          const isTarget = b === btn;
+          b.style.borderColor = isTarget ? 'var(--baby-pink)' : 'rgba(255,255,255,0.12)';
+          b.style.background = isTarget ? 'rgba(236,72,153,0.18)' : 'rgba(255,255,255,0.03)';
+          b.style.color = isTarget ? '#fff' : 'var(--concrete-300)';
+        });
+      });
+    });
+
+    // Botão de Salvar Alterações Unificado
+    modalContainer.querySelector('#btn-save-full-profile').addEventListener('click', async () => {
+      const nameInput = modalContainer.querySelector('#profile-edit-name');
+      const weightInput = modalContainer.querySelector('#profile-edit-weight');
+      const heightInput = modalContainer.querySelector('#profile-edit-height');
+
+      const nameVal = nameInput ? nameInput.value.trim() : '';
+      const weightVal = weightInput && weightInput.value ? parseFloat(weightInput.value) : null;
+      const heightVal = heightInput && heightInput.value ? parseFloat(heightInput.value) : null;
+
+      this.profile.name = nameVal || (p.name || '');
+      this.profile.weight = (weightVal && !isNaN(weightVal) && weightVal > 0) ? weightVal : null;
+      this.profile.height = (heightVal && !isNaN(heightVal) && heightVal > 0) ? heightVal : null;
+      this.profile.goal = selectedGoal;
+      this.profile.frequency = selectedFreq;
+      this.profile.auraColor = selectedAura;
+      this.profile.hasConfiguredBio = true;
+
+      StorageService.saveProfile(this.profile);
+      if (this.supabaseUser) {
+        await SupabaseService.saveProfile(this.supabaseUser.id, this.profile);
+      }
+
+      this.updateHeaderAvatar();
+      this.updateDrawerHeaderSubtitle();
+      sound.playCheckSound();
+      close();
+      this.renderCurrentTab();
+      this.showCosmicModalAlert({
+        title: 'PERFIL ATUALIZADO!',
+        message: 'Suas métricas e personalizações foram salvas no santuário.',
+        type: 'info'
+      });
     });
 
     // Escolher Foto do Celular
@@ -2256,7 +3606,14 @@ class AgiteMeApp {
     const removeBtn = modalContainer.querySelector('#btn-remove-avatar-modal');
     if (removeBtn) {
       removeBtn.addEventListener('click', async () => {
-        if (confirm('Deseja remover sua foto de perfil?')) {
+        const ok = await this.showCosmicConfirm({
+          title: 'REMOVER FOTO',
+          message: 'Deseja remover sua foto de perfil e restaurar o avatar cósmico padrão?',
+          confirmText: 'Remover Foto',
+          cancelText: 'Cancelar',
+          isDestructive: true
+        });
+        if (ok) {
           this.profile.avatarUrl = '';
           StorageService.saveProfile(this.profile);
           if (this.supabaseUser) {
@@ -2266,22 +3623,41 @@ class AgiteMeApp {
           this.renderCurrentTab();
           sound.playTapSound();
           close();
+          this.showCosmicModalAlert({
+            title: 'FOTO REMOVIDA',
+            message: 'Foto de perfil removida com sucesso.',
+            type: 'info'
+          });
         }
       });
     }
 
-    // Alterar Cor da Aura Cósmica (Paleta Predefinida)
+    // Alterar Cor da Aura (Atualiza Preview em Tempo Real sem fechar o modal)
     modalContainer.querySelectorAll('.aura-color-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const selectedAura = btn.getAttribute('data-aura');
-        this.profile.auraColor = selectedAura;
-        StorageService.saveProfile(this.profile);
-        if (this.supabaseUser) {
-          await SupabaseService.saveProfile(this.supabaseUser.id, this.profile);
+      btn.addEventListener('click', () => {
+        const pickedAura = btn.getAttribute('data-aura');
+        selectedAura = pickedAura;
+        this.profile.auraColor = pickedAura;
+
+        const ring = modalContainer.querySelector('#modal-preview-aura-ring');
+        const hexLabel = modalContainer.querySelector('#aura-current-hex-label');
+        if (ring) {
+          ring.style.background = pickedAura;
+          ring.style.boxShadow = `0 0 20px ${pickedAura}`;
         }
-        this.updateHeaderAvatar();
-        sound.playCheckSound();
-        this.openProfileManagerModal();
+        if (hexLabel) {
+          hexLabel.textContent = pickedAura.toUpperCase();
+          hexLabel.style.color = pickedAura;
+        }
+
+        modalContainer.querySelectorAll('.aura-color-btn').forEach(b => {
+          const isTarget = b === btn;
+          b.style.border = isTarget ? '2.5px solid #fff' : '1px solid rgba(255,255,255,0.25)';
+          b.style.transform = isTarget ? 'scale(1.15)' : 'scale(1)';
+          b.style.boxShadow = isTarget ? `0 0 14px ${pickedAura}` : '3px rgba(0,0,0,0.5)';
+        });
+
+        sound.playTapSound();
       });
     });
 
@@ -2383,7 +3759,14 @@ class AgiteMeApp {
     // Abrir Autenticação Supabase ou Desconectar
     modalContainer.querySelector('#btn-open-supabase-auth').addEventListener('click', async () => {
       if (this.supabaseUser) {
-        if (confirm('Deseja sair da sua conta e desconectar?')) {
+        const ok = await this.showCosmicConfirm({
+          title: 'DESCONECTAR CONTA',
+          message: 'Deseja sair da sua conta Supabase e desconectar a sincronização na nuvem?',
+          confirmText: 'Sair e Desconectar',
+          cancelText: 'Permanecer',
+          isDestructive: true
+        });
+        if (ok) {
           await SupabaseService.signOut();
           this.supabaseUser = null;
           StorageService.switchUser('joao');
@@ -2392,7 +3775,11 @@ class AgiteMeApp {
           this.updateHeaderAvatar();
           this.updateHeaderStreak();
           this.renderCurrentTab();
-          alert('Você saiu da sua conta.');
+          this.showCosmicModalAlert({
+            title: 'CONTA DESCONECTADA',
+            message: 'Você saiu da sua conta. O app voltou ao modo local.',
+            type: 'info'
+          });
         }
       } else {
         close();
@@ -2403,7 +3790,7 @@ class AgiteMeApp {
     // Atalho para Editar Bio
     modalContainer.querySelector('#btn-edit-bio-quick').addEventListener('click', () => {
       close();
-      this.openOnboardingModal();
+      this.openOnboardingModal('calibrate');
     });
   }
 
@@ -2419,12 +3806,16 @@ class AgiteMeApp {
 
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 1.3rem;">☁️</span>
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); display: flex; align-items: center; justify-content: center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+                </svg>
+              </div>
               <div>
                 <h3 style="font-family: var(--font-carved); font-size: 1.1rem; color: #fff; margin: 0;">
-                  ACESSO AO TEMPLO NA NUVEM
+                  MINHA CONTA
                 </h3>
-                <small style="color: var(--neon-cyan); font-size: 0.68rem;">Sincronize entre Celulares com Supabase</small>
+                <small style="color: var(--neon-cyan); font-size: 0.68rem;">Sincronize entre seus aparelhos</small>
               </div>
             </div>
             <button id="btn-close-auth-modal" style="background: none; border: none; color: var(--concrete-400); font-size: 1.6rem; cursor: pointer;">&times;</button>
@@ -2442,8 +3833,8 @@ class AgiteMeApp {
 
           <form id="supabase-auth-form">
             <div class="form-group" id="group-auth-name" style="display: none;">
-              <label class="form-label">Nome do Guerreiro</label>
-              <input type="text" class="form-input" id="auth-name" value="${p.name || ''}" placeholder="Ex: João Pedro ou Marco" />
+              <label class="form-label">Nome</label>
+              <input type="text" class="form-input" id="auth-name" value="${p.name || ''}" placeholder="Ex: João Pedro" />
             </div>
 
             <div class="form-group">
@@ -2459,7 +3850,7 @@ class AgiteMeApp {
             <div id="auth-error-msg" style="display: none; padding: 8px 12px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); border-radius: 8px; color: #fca5a5; font-size: 0.74rem; margin-bottom: 12px;"></div>
 
             <button type="submit" id="btn-submit-auth" class="btn-enter-temple" style="width: 100%; padding: 12px; font-size: 0.85rem; margin-bottom: 10px;">
-              ⚡ ENTRAR NO TEMPLO
+              ENTRAR
             </button>
           </form>
 
@@ -2490,7 +3881,7 @@ class AgiteMeApp {
       tabSignup.classList.remove('active');
       tabSignup.style.borderBottomColor = 'transparent';
       nameGroup.style.display = 'none';
-      submitBtn.textContent = '⚡ ENTRAR NO TEMPLO';
+      submitBtn.textContent = 'ENTRAR';
       errorBox.style.display = 'none';
     });
 
@@ -2501,7 +3892,7 @@ class AgiteMeApp {
       tabLogin.classList.remove('active');
       tabLogin.style.borderBottomColor = 'transparent';
       nameGroup.style.display = 'block';
-      submitBtn.textContent = '✨ CRIAR NOVO GUERREIRO';
+      submitBtn.textContent = 'Criar nova conta';
       errorBox.style.display = 'none';
     });
 
@@ -2526,7 +3917,7 @@ class AgiteMeApp {
             errorBox.textContent = res.error || 'Erro ao criar conta.';
             errorBox.style.display = 'block';
             submitBtn.disabled = false;
-            submitBtn.textContent = '✨ CRIAR NOVO GUERREIRO';
+            submitBtn.textContent = 'Criar nova conta';
             return;
           }
 
@@ -2534,24 +3925,30 @@ class AgiteMeApp {
             this.supabaseUser = res.data.user;
             this.profile.email = email;
             if (name) this.profile.name = name;
+            this.profile.isOnboarded = true;
             StorageService.saveProfile(this.profile);
             await SupabaseService.saveProfile(this.supabaseUser.id, this.profile);
           }
 
           sound.playVictoryFanfare();
-          alert('Conta criada com sucesso no Supabase!');
+          this.showCosmicModalAlert({
+            title: 'CONTA CRIADA',
+            message: 'Conta criada e sincronizada com sucesso no Supabase!',
+            type: 'success'
+          });
         } else {
           const res = await SupabaseService.signIn(email, password);
           if (!res.success) {
             errorBox.textContent = res.error || 'Credenciais inválidas.';
             errorBox.style.display = 'block';
             submitBtn.disabled = false;
-            submitBtn.textContent = '⚡ ENTRAR NO TEMPLO';
+            submitBtn.textContent = 'ENTRAR';
             return;
           }
 
           this.supabaseUser = res.data.user;
           this.profile.email = email;
+          this.profile.isOnboarded = true;
 
           // Busca perfil remoto se existir
           const remoteProfile = await SupabaseService.getProfile(this.supabaseUser.id);
@@ -2579,7 +3976,11 @@ class AgiteMeApp {
 
           StorageService.saveProfile(this.profile);
           sound.playVictoryFanfare();
-          alert(`Bem-vindo de volta ao templo, ${this.profile.name}!`);
+          this.showCosmicModalAlert({
+            title: 'BEM-VINDO DE VOLTA',
+            message: `Conexão restabelecida ao seu templo, ${this.profile.name || 'Guerreiro'}!`,
+            type: 'success'
+          });
         }
 
         this.updateHeaderAvatar();
@@ -2590,7 +3991,7 @@ class AgiteMeApp {
         errorBox.textContent = err.message || 'Erro inesperado na conexão.';
         errorBox.style.display = 'block';
         submitBtn.disabled = false;
-        submitBtn.textContent = mode === 'signup' ? '✨ CRIAR NOVO GUERREIRO' : '⚡ ENTRAR NO TEMPLO';
+        submitBtn.textContent = mode === 'signup' ? 'Criar nova conta' : 'ENTRAR';
       }
     });
   }
@@ -2598,95 +3999,454 @@ class AgiteMeApp {
   // ==========================================
   // MODAIS (ONBOARDING, GUIA ANATÔMICO & CHECKOUT)
   // ==========================================
-  openOnboardingModal() {
+  openOptionPickerModal({ title, subtitle, options, currentValue, onSelect }) {
+    let pickerOverlay = document.querySelector('#option-picker-overlay');
+    if (!pickerOverlay) {
+      pickerOverlay = document.createElement('div');
+      pickerOverlay.id = 'option-picker-overlay';
+      pickerOverlay.className = 'cosmic-confirm-overlay';
+      pickerOverlay.style.zIndex = '3100';
+      document.body.appendChild(pickerOverlay);
+    }
+
+    pickerOverlay.innerHTML = `
+      <div class="cosmic-confirm-card" style="max-width: 380px; text-align: left; max-height: 85vh; display: flex; flex-direction: column; padding: 22px 18px 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
+          <div>
+            <h3 style="font-family: var(--font-carved); font-size: 1.25rem; color: #fff; margin: 0 0 4px; letter-spacing: 0.03em;">
+              ${title}
+            </h3>
+            <p style="font-size: 0.78rem; color: #94a3b8; margin: 0;">
+              ${subtitle}
+            </p>
+          </div>
+          <button type="button" id="btn-close-picker" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; line-height: 1; cursor: pointer; padding: 2px 6px;">&times;</button>
+        </div>
+
+        <div class="picker-options-list" style="overflow-y: auto; max-height: 55vh; padding-right: 4px;">
+          ${options.map(opt => `
+            <div class="picker-option-card ${String(opt.value) === String(currentValue) ? 'active' : ''}" data-value="${opt.value}">
+              <div class="picker-option-left">
+                <div class="picker-option-icon">${opt.icon}</div>
+                <div class="picker-option-meta">
+                  <div class="picker-option-title">${opt.title}</div>
+                  <div class="picker-option-desc">${opt.desc}</div>
+                </div>
+              </div>
+              <div class="picker-option-radio">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+
+    const closePicker = () => {
+      pickerOverlay.remove();
+    };
+
+    pickerOverlay.querySelector('#btn-close-picker')?.addEventListener('click', closePicker);
+    pickerOverlay.addEventListener('click', (e) => {
+      if (e.target === pickerOverlay) closePicker();
+    });
+
+    pickerOverlay.querySelectorAll('.picker-option-card').forEach(card => {
+      card.addEventListener('click', () => {
+        sound.playTapSound();
+        if ('vibrate' in navigator) navigator.vibrate(25);
+        const val = card.getAttribute('data-value');
+        onSelect(val);
+        closePicker();
+      });
+    });
+  }
+
+  openOnboardingModal(step = 'gateway') {
+    this.openAppleOnboarding(step === 'calibrate' ? 3 : 0);
+  }
+
+  openAppleOnboarding(stepIndex = 0) {
     const modalContainer = document.querySelector('#modal-container');
-    const p = this.profile;
+    const p = this.profile || StorageService.getProfile();
+
+    if (stepIndex < 3) {
+      const slides = [
+        {
+          badge: '01 | Olá, seja bem vindo(a)',
+          svg: ONBOARDING_SVGS.portais,
+          title: 'Olá, seja bem vindo(a)',
+          desc: 'Este não é um simples app de treino que você encontra por aí.',
+          btnText: 'CONTINUAR'
+        },
+        {
+          badge: '02 | PILARES DA CONSTÂNCIA',
+          svg: ONBOARDING_SVGS.pilares,
+          title: 'PILARES DA CONSTÂNCIA',
+          desc: 'Construa uma rotina inabalável sobre os pilares da disciplina.',
+          btnText: 'CONTINUAR'
+        },
+        {
+          badge: '03 | ORÁCULO IA',
+          svg: ONBOARDING_SVGS.oraculo,
+          title: 'ORÁCULO IA',
+          desc: 'Seu guia personalizado para treinos. Inteligência artificial para direcionar sua jornada. Faça perguntas sobre treino, alimentação, suplementação e descanso.',
+          btnText: 'COMEÇAR JORNADA'
+        }
+      ];
+
+      const current = slides[stepIndex];
+
+      modalContainer.innerHTML = `
+        <div class="onboarding-fullscreen-portal" id="onboarding-fullscreen-portal">
+          <div class="onboarding-apple-container">
+            <div class="onboarding-apple-nav" style="justify-content: flex-end;">
+              <button type="button" class="onboarding-apple-skip" id="btn-ob-skip">Pular</button>
+            </div>
+
+            <div class="onboarding-apple-card">
+              ${current.svg}
+              <h2 class="onboarding-apple-title">${current.title}</h2>
+              <p class="onboarding-apple-desc">${current.desc}</p>
+            </div>
+
+            <div class="onboarding-apple-bottom">
+              <div class="onboarding-apple-dots">
+                <span class="onboarding-apple-dot ${stepIndex === 0 ? 'active' : ''}"></span>
+                <span class="onboarding-apple-dot ${stepIndex === 1 ? 'active' : ''}"></span>
+                <span class="onboarding-apple-dot ${stepIndex === 2 ? 'active' : ''}"></span>
+                <span class="onboarding-apple-dot ${stepIndex === 3 ? 'active' : ''}"></span>
+              </div>
+              <button type="button" class="onboarding-apple-btn glow" id="btn-ob-next">
+                <span>${current.btnText}</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      modalContainer.querySelector('#btn-ob-skip')?.addEventListener('click', () => {
+        sound.playTapSound();
+        this.openAppleOnboarding(3);
+      });
+
+      modalContainer.querySelector('#btn-ob-next')?.addEventListener('click', () => {
+        sound.playTapSound();
+        this.openAppleOnboarding(stepIndex + 1);
+      });
+
+      return;
+    }
+
+
+    // STEP === 'calibrate'
+    const GOAL_CONFIG = {
+      hipertrofia: {
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v14"/><path d="M18 5v14"/><path d="M2 9v6"/><path d="M22 9v6"/><line x1="6" y1="12" x2="18" y2="12"/></svg>`,
+        title: 'Hipertrofia Muscular',
+        sub: 'Ganho de massa magra & volume',
+        desc: 'Foco em tensão mecânica contínua, sobrecarga progressiva e densidade muscular.'
+      },
+      emagrecimento: {
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z"/></svg>`,
+        title: 'Definição & Queima',
+        sub: 'Queima de gordura & definição',
+        desc: 'Foco em densidade metabólica, gasto calórico e tônus atlético preservando músculos.'
+      },
+      condicionamento: {
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+        title: 'Força & Condicionamento',
+        sub: 'Performance atlética & funcional',
+        desc: 'Foco em potência, resistência aeróbica e condicionamento integral para a vida.'
+      }
+    };
+
+    const FREQ_CONFIG = {
+      3: {
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M12 20v-8"/><path d="M12 12c0-3.5 2.5-6 6-6 0 3.5-2.5 6-6 6z"/><path d="M12 15c0-3-2-5-5-5 0 3 2 5 5 5z"/></svg>`,
+        title: '3 Dias na Semana',
+        sub: 'Ideal para iniciantes ou rotinas cheias',
+        desc: 'Descanso intercalado entre treinos, excelente para adaptação e recuperação física.'
+      },
+      4: {
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+        title: '4 Dias na Semana',
+        sub: 'Divisão recomendada (Equilíbrio ideal)',
+        desc: 'O ponto ideal de consistência semanal para evolução sólida e recuperação muscular.'
+      },
+      5: {
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3 4 5 4 9a4 4 0 0 1-8 0c0-2 1-3.5 2-5 0 2 1 3 2 3s2-2 0-7z"/><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12"/></svg>`,
+        title: '5 Dias na Semana',
+        sub: 'Alta frequência e volume elevado',
+        desc: 'Para quem busca ritmo avançado de treinos com divisão segmentada por grupamento.'
+      }
+    };
+
+    const currentGoalKey = p.goal || 'hipertrofia';
+    const currentGoalObj = GOAL_CONFIG[currentGoalKey] || GOAL_CONFIG.hipertrofia;
+
+    const currentFreqKey = p.frequency || 4;
+    const currentFreqObj = FREQ_CONFIG[currentFreqKey] || FREQ_CONFIG[4];
 
     modalContainer.innerHTML = `
-      <div class="modal-overlay">
-        <div class="modal-sheet stone-panel">
-          <div class="modal-handle-bar"></div>
-          <div class="onboarding-portal">
-            <span class="portal-code">PORTAL DE INICIAÇÃO</span>
-            <h2 style="font-family: var(--font-carved); font-size: 1.45rem; color: #fff; margin: 8px 0 4px;">
-              BEM-VINDO AO ORÁCULO
+      <div class="onboarding-fullscreen-portal" id="onboarding-calibrate-portal">
+        <div class="onboarding-apple-container" style="text-align: left;">
+          <div class="onboarding-apple-nav" style="justify-content: flex-start;">
+            <button type="button" class="onboarding-apple-skip" id="ob-back-to-gateway" style="padding-left: 0; display: inline-flex; align-items: center; gap: 4px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+              <span>Voltar</span>
+            </button>
+          </div>
+
+          <div style="margin: 8px 0 14px;">
+            <h2 class="onboarding-apple-title" style="font-size: 1.6rem; text-align: left; margin: 0 0 4px;">
+              ADENTRE O TEMPLO
             </h2>
-            <p style="font-size: 0.8rem; color: var(--concrete-300); margin-bottom: 20px;">
-              Configuração inicial para calibrar seus treinos no templo de ferro.
+            <p class="onboarding-apple-desc" style="text-align: left; max-width: 100%; font-size: 0.82rem; margin: 0;">
+              Ajuste suas métricas para que o Oráculo calcule os volumes, cargas e descansos ideais do seu templo.
             </p>
+          </div>
 
-            <form id="onboarding-form">
-              <div class="form-group">
-                <label class="form-label">Seu Nome ou Codinome Cósmico</label>
-                <input type="text" class="form-input" id="ob-name" value="${p.name || 'João Pedro'}" required />
+          <form id="onboarding-form" style="width: 100%;">
+            <!-- NOME DO USUÁRIO (OPCIONAL / ANÔNIMO COM ?) -->
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+                <label class="form-label" style="margin: 0;">Como devemos te chamar?</label>
+                <span style="font-size: 0.7rem; color: #94a3b8;">Opcional</span>
               </div>
+              <div class="field-with-icon-wrapper">
+                <div class="field-prefix-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <input type="text" class="form-input field-input-with-icon" id="ob-name" value="${p.name || ''}" placeholder="Seu nome ou apelido (ex: Carlos, Marina...)" />
+                <button type="button" class="btn-anonymous-badge" id="btn-set-anon" title="Entrar sem nome com avatar ?">
+                  <span style="font-weight: 800; color: #38bdf8;">?</span>
+                  <span>Anônimo</span>
+                </button>
+              </div>
+              <div class="form-field-helper">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <span>Se deixar em branco, você entrará anônimo com o símbolo <strong>?</strong> e poderá adicionar seu nome quando quiser.</span>
+              </div>
+            </div>
 
-              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-                <div class="form-group">
-                  <label class="form-label">Peso (kg)</label>
-                  <div class="stepper-input-container">
-                    <input type="number" class="form-input stepper-field" id="ob-weight" value="${p.weight || 75}" min="30" max="250" required />
-                    <div class="stepper-actions">
-                      <button type="button" class="stepper-btn stepper-btn-up" data-step-target="ob-weight" data-delta="1" aria-label="Aumentar peso">▲</button>
-                      <button type="button" class="stepper-btn stepper-btn-down" data-step-target="ob-weight" data-delta="-1" aria-label="Diminuir peso">▼</button>
-                    </div>
+            <!-- MÉTRICAS FÍSICAS REFINADAS -->
+            <div style="margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+                <label class="form-label" style="margin: 0;">Métricas Físicas</label>
+                <span style="font-size: 0.7rem; color: #94a3b8;">Valores estimados</span>
+              </div>
+              <div class="metrics-stepper-grid">
+                <div class="metric-stepper-card">
+                  <div class="metric-card-label">PESO</div>
+                  <div class="metric-input-row">
+                    <input type="number" class="metric-num-input" id="ob-weight" value="${p.weight || 75}" min="30" max="250" />
+                    <span class="metric-unit">kg</span>
+                  </div>
+                  <div class="metric-actions">
+                    <button type="button" class="metric-btn-step" data-step-target="ob-weight" data-delta="-1" aria-label="Diminuir peso">−</button>
+                    <button type="button" class="metric-btn-step" data-step-target="ob-weight" data-delta="1" aria-label="Aumentar peso">+</button>
                   </div>
                 </div>
-                <div class="form-group">
-                  <label class="form-label">Altura (cm)</label>
-                  <div class="stepper-input-container">
-                    <input type="number" class="form-input stepper-field" id="ob-height" value="${p.height || 178}" min="100" max="230" required />
-                    <div class="stepper-actions">
-                      <button type="button" class="stepper-btn stepper-btn-up" data-step-target="ob-height" data-delta="1" aria-label="Aumentar altura">▲</button>
-                      <button type="button" class="stepper-btn stepper-btn-down" data-step-target="ob-height" data-delta="-1" aria-label="Diminuir altura">▼</button>
-                    </div>
+
+                <div class="metric-stepper-card">
+                  <div class="metric-card-label">ALTURA</div>
+                  <div class="metric-input-row">
+                    <input type="number" class="metric-num-input" id="ob-height" value="${p.height || 178}" min="100" max="230" />
+                    <span class="metric-unit">cm</span>
+                  </div>
+                  <div class="metric-actions">
+                    <button type="button" class="metric-btn-step" data-step-target="ob-height" data-delta="-1" aria-label="Diminuir altura">−</button>
+                    <button type="button" class="metric-btn-step" data-step-target="ob-height" data-delta="1" aria-label="Aumentar altura">+</button>
                   </div>
                 </div>
-                <div class="form-group">
-                  <label class="form-label">Idade</label>
-                  <div class="stepper-input-container">
-                    <input type="number" class="form-input stepper-field" id="ob-age" value="${p.age || 24}" min="12" max="100" required />
-                    <div class="stepper-actions">
-                      <button type="button" class="stepper-btn stepper-btn-up" data-step-target="ob-age" data-delta="1" aria-label="Aumentar idade">▲</button>
-                      <button type="button" class="stepper-btn stepper-btn-down" data-step-target="ob-age" data-delta="-1" aria-label="Diminuir idade">▼</button>
-                    </div>
+
+                <div class="metric-stepper-card">
+                  <div class="metric-card-label">IDADE</div>
+                  <div class="metric-input-row">
+                    <input type="number" class="metric-num-input" id="ob-age" value="${p.age || 24}" min="12" max="100" />
+                    <span class="metric-unit">anos</span>
+                  </div>
+                  <div class="metric-actions">
+                    <button type="button" class="metric-btn-step" data-step-target="ob-age" data-delta="-1" aria-label="Diminuir idade">−</button>
+                    <button type="button" class="metric-btn-step" data-step-target="ob-age" data-delta="1" aria-label="Aumentar idade">+</button>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div class="form-group">
-                <label class="form-label">Objetivo Principal</label>
-                <select class="form-input" id="ob-goal">
-                  <option value="hipertrofia" ${p.goal === 'hipertrofia' ? 'selected' : ''}>Hipertrofia (Ganho de Massa Muscular)</option>
-                  <option value="emagrecimento" ${p.goal === 'emagrecimento' ? 'selected' : ''}>Definição & Queima de Gordura</option>
-                  <option value="condicionamento" ${p.goal === 'condicionamento' ? 'selected' : ''}>Força & Condicionamento Geral</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Frequência Semanal Desejada</label>
-                <select class="form-input" id="ob-frequency">
-                  <option value="3" ${p.frequency === 3 ? 'selected' : ''}>3 dias na semana (Ideal para iniciantes)</option>
-                  <option value="4" ${p.frequency === 4 ? 'selected' : ''}>4 dias na semana (Divisão recomendada)</option>
-                  <option value="5" ${p.frequency === 5 ? 'selected' : ''}>5 dias na semana</option>
-                </select>
-              </div>
-
-              <button type="submit" class="btn-enter-temple" style="margin-top: 10px;">
-                CONSAGRAR PERFIL ⚡
+            <!-- OBJETIVO PRINCIPAL -->
+            <div class="form-group">
+              <label class="form-label">Objetivo Principal</label>
+              <button type="button" class="custom-select-trigger" id="ob-goal-trigger">
+                <div class="custom-select-trigger-content">
+                  <div class="custom-select-icon" id="ob-goal-icon">${currentGoalObj.icon}</div>
+                  <div class="custom-select-text">
+                    <strong id="ob-goal-title">${currentGoalObj.title}</strong>
+                    <span class="custom-select-sub" id="ob-goal-sub">${currentGoalObj.sub}</span>
+                  </div>
+                </div>
+                <div class="custom-select-badge-action">
+                  <span>Alterar</span>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
               </button>
+              <input type="hidden" id="ob-goal" value="${currentGoalKey}" />
+            </div>
 
-              <button type="button" class="demo-recruiter-btn" id="ob-demo-btn">
-                Entrar no Modo Demonstração (Portfólio)
+            <!-- FREQUÊNCIA SEMANAL -->
+            <div class="form-group">
+              <label class="form-label">Frequência Semanal Desejada</label>
+              <button type="button" class="custom-select-trigger" id="ob-freq-trigger">
+                <div class="custom-select-trigger-content">
+                  <div class="custom-select-icon" id="ob-freq-icon">${currentFreqObj.icon}</div>
+                  <div class="custom-select-text">
+                    <strong id="ob-freq-title">${currentFreqObj.title}</strong>
+                    <span class="custom-select-sub" id="ob-freq-sub">${currentFreqObj.sub}</span>
+                  </div>
+                </div>
+                <div class="custom-select-badge-action">
+                  <span>Alterar</span>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
               </button>
-            </form>
+              <input type="hidden" id="ob-frequency" value="${currentFreqKey}" />
+            </div>
+
+            <!-- STATUS LOCAL -->
+            <div class="onboarding-local-status-badge">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <span><strong>Modo Local Ativo:</strong> Seus dados ficarão salvos na memória do seu navegador. Você poderá criar uma conta na nuvem a qualquer momento para sincronizar aparelhos.</span>
+            </div>
+
+            <button type="submit" class="onboarding-apple-btn glow" style="margin-top: 14px; background: linear-gradient(135deg, #222634, #12141c); border-color: rgba(255, 255, 255, 0.4);">
+              <span>ENTRAR NO TEMPO</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </form>
+
+          <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px; width: 100%; text-align: center;">
+            <button type="button" id="ob-btn-cloud-auth" style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 999px; width: 100%; height: 44px; color: #cbd5e1; font-size: 0.82rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.2s;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+              <span>Cadastre-se e entre em qualquer dispositivo</span>
+            </button>
+            <button type="button" id="ob-btn-demo-mode" style="background: transparent; border: none; color: #64748b; font-size: 0.76rem; cursor: pointer; padding: 6px; text-decoration: underline;">
+              Carregar Dados de Demonstração (caso você esteja olhando meu portfólio)
+            </button>
           </div>
         </div>
       </div>
     `;
 
-    // Conectar Botões de Stepper ▲ / ▼ com feedback sonoro e tátil
-    modalContainer.querySelectorAll('.stepper-btn').forEach(btn => {
+    // Botão Voltar ao Slide anterior
+    const btnBack = modalContainer.querySelector('#ob-back-to-gateway');
+    if (btnBack) {
+      btnBack.addEventListener('click', () => {
+        sound.playTapSound();
+        this.openAppleOnboarding(2);
+      });
+    }
+
+    // Ação: Abrir modal de Login/Cadastro Supabase
+    const btnCloud = modalContainer.querySelector('#ob-btn-cloud-auth');
+    if (btnCloud) {
+      btnCloud.addEventListener('click', () => {
+        modalContainer.innerHTML = '';
+        this.openSupabaseAuthModal();
+      });
+    }
+
+    // Ação: Modo Demonstração
+    const btnDemo = modalContainer.querySelector('#ob-btn-demo-mode');
+    if (btnDemo) {
+      btnDemo.addEventListener('click', () => {
+        StorageService.loadDemoData();
+        this.profile = StorageService.getProfile();
+        this.updateHeaderStreak();
+        this.updateHeaderAvatar();
+        modalContainer.innerHTML = '';
+        sound.playVictoryFanfare();
+        this.switchTab('templo');
+      });
+    }
+
+    // Ação: Botão Anônimo (?)
+    const btnAnon = modalContainer.querySelector('#btn-set-anon');
+    const nameInput = modalContainer.querySelector('#ob-name');
+    if (btnAnon && nameInput) {
+      btnAnon.addEventListener('click', () => {
+        sound.playTapSound();
+        nameInput.value = '';
+        nameInput.placeholder = 'Entrando como Anônimo';
+        nameInput.focus();
+      });
+    }
+
+    // Ação: Modal Bonitinho para Objetivo Principal
+    const goalTrigger = modalContainer.querySelector('#ob-goal-trigger');
+    if (goalTrigger) {
+      goalTrigger.addEventListener('click', () => {
+        sound.playTapSound();
+        const currentVal = modalContainer.querySelector('#ob-goal').value;
+        const goalOptionsList = [
+          { value: 'hipertrofia', icon: GOAL_CONFIG.hipertrofia.icon, title: GOAL_CONFIG.hipertrofia.title, desc: GOAL_CONFIG.hipertrofia.desc },
+          { value: 'emagrecimento', icon: GOAL_CONFIG.emagrecimento.icon, title: GOAL_CONFIG.emagrecimento.title, desc: GOAL_CONFIG.emagrecimento.desc },
+          { value: 'condicionamento', icon: GOAL_CONFIG.condicionamento.icon, title: GOAL_CONFIG.condicionamento.title, desc: GOAL_CONFIG.condicionamento.desc }
+        ];
+
+        this.openOptionPickerModal({
+          title: 'Objetivo Principal',
+          subtitle: 'Qual é o seu maior foco de treinamento agora?',
+          options: goalOptionsList,
+          currentValue: currentVal,
+          onSelect: (selectedVal) => {
+            const chosen = GOAL_CONFIG[selectedVal];
+            if (chosen) {
+              modalContainer.querySelector('#ob-goal').value = selectedVal;
+              modalContainer.querySelector('#ob-goal-icon').innerHTML = chosen.icon;
+              modalContainer.querySelector('#ob-goal-title').textContent = chosen.title;
+              modalContainer.querySelector('#ob-goal-sub').textContent = chosen.sub;
+            }
+          }
+        });
+      });
+    }
+
+    // Ação: Modal Bonitinho para Frequência Semanal
+    const freqTrigger = modalContainer.querySelector('#ob-freq-trigger');
+    if (freqTrigger) {
+      freqTrigger.addEventListener('click', () => {
+        sound.playTapSound();
+        const currentVal = modalContainer.querySelector('#ob-frequency').value;
+        const freqOptionsList = [
+          { value: '3', icon: FREQ_CONFIG[3].icon, title: FREQ_CONFIG[3].title, desc: FREQ_CONFIG[3].desc },
+          { value: '4', icon: FREQ_CONFIG[4].icon, title: FREQ_CONFIG[4].title, desc: FREQ_CONFIG[4].desc },
+          { value: '5', icon: FREQ_CONFIG[5].icon, title: FREQ_CONFIG[5].title, desc: FREQ_CONFIG[5].desc }
+        ];
+
+        this.openOptionPickerModal({
+          title: 'Frequência Semanal',
+          subtitle: 'Quantos dias por semana você pretende treinar?',
+          options: freqOptionsList,
+          currentValue: currentVal,
+          onSelect: (selectedVal) => {
+            const chosen = FREQ_CONFIG[selectedVal];
+            if (chosen) {
+              modalContainer.querySelector('#ob-frequency').value = selectedVal;
+              modalContainer.querySelector('#ob-freq-icon').innerHTML = chosen.icon;
+              modalContainer.querySelector('#ob-freq-title').textContent = chosen.title;
+              modalContainer.querySelector('#ob-freq-sub').textContent = chosen.sub;
+            }
+          }
+        });
+      });
+    }
+
+    // Steppers − / + para Métricas Físicas
+    modalContainer.querySelectorAll('.metric-btn-step').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         const targetId = btn.getAttribute('data-step-target');
@@ -2711,28 +4471,25 @@ class AgiteMeApp {
     const form = modalContainer.querySelector('#onboarding-form');
     form.addEventListener('submit', (e) => {
       e.preventDefault();
+      const enteredName = modalContainer.querySelector('#ob-name').value.trim();
+
       this.profile = {
-        name: modalContainer.querySelector('#ob-name').value.trim(),
-        weight: parseFloat(modalContainer.querySelector('#ob-weight').value),
-        height: parseFloat(modalContainer.querySelector('#ob-height').value),
-        age: parseInt(modalContainer.querySelector('#ob-age').value, 10),
-        goal: modalContainer.querySelector('#ob-goal').value,
-        frequency: parseInt(modalContainer.querySelector('#ob-frequency').value, 10),
-        isOnboarded: true,
-        geminiApiKey: this.profile.geminiApiKey || ''
+        ...this.profile,
+        name: enteredName,
+        weight: parseFloat(modalContainer.querySelector('#ob-weight').value) || 75,
+        height: parseFloat(modalContainer.querySelector('#ob-height').value) || 178,
+        age: parseInt(modalContainer.querySelector('#ob-age').value, 10) || 24,
+        goal: modalContainer.querySelector('#ob-goal').value || 'hipertrofia',
+        frequency: parseInt(modalContainer.querySelector('#ob-frequency').value, 10) || 4,
+        isOnboarded: true
       };
 
       StorageService.saveProfile(this.profile);
       modalContainer.innerHTML = '';
-      this.renderCurrentTab();
-    });
-
-    modalContainer.querySelector('#ob-demo-btn').addEventListener('click', () => {
-      StorageService.loadDemoData();
-      this.profile = StorageService.getProfile();
+      sound.playVictoryFanfare();
       this.updateHeaderStreak();
-      modalContainer.innerHTML = '';
-      this.switchTab('templo');
+      this.updateHeaderAvatar();
+      this.renderCurrentTab();
     });
   }
 
@@ -2809,14 +4566,24 @@ class AgiteMeApp {
           <!-- Links Externos de Alta Autoridade (MuscleWiki & YouTube) -->
           <div class="exercise-external-actions">
             <a href="${exercise.muscleWikiUrl}" target="_blank" rel="noopener noreferrer" class="ext-guide-btn musclewiki-btn">
-              <span class="ext-btn-icon">🌐</span>
+              <span class="ext-btn-icon" style="display: flex; align-items: center; justify-content: center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="2" y1="12" x2="22" y2="12"/>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                </svg>
+              </span>
               <div class="ext-btn-texts">
                 <strong>MuscleWiki Oficial</strong>
                 <small>Guia 3D & Biomecânica ↗</small>
               </div>
             </a>
             <a href="${exercise.youtubeUrl}" target="_blank" rel="noopener noreferrer" class="ext-guide-btn youtube-btn">
-              <span class="ext-btn-icon">🎬</span>
+              <span class="ext-btn-icon" style="display: flex; align-items: center; justify-content: center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+              </span>
               <div class="ext-btn-texts">
                 <strong>Vídeo no YouTube</strong>
                 <small>Tutorial passo a passo ↗</small>
@@ -2841,8 +4608,13 @@ class AgiteMeApp {
 
           <!-- Erros Comuns a Evitar -->
           <div style="margin-bottom: 18px; background: rgba(255,42,133,0.08); border: 1px solid rgba(255,42,133,0.25); padding: 12px; border-radius: 10px;">
-            <h4 style="font-family: var(--font-hud); font-size: 0.75rem; color: var(--neon-pink); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px;">
-              ⚠️ ERROS COMUNS DE INICIANTES:
+            <h4 style="font-family: var(--font-hud); font-size: 0.75rem; color: var(--neon-pink); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              ERROS COMUNS DE INICIANTES:
             </h4>
             <ul style="list-style-type: none; display: flex; flex-direction: column; gap: 4px;">
               ${exercise.mistakes.map(m => `
@@ -2853,8 +4625,13 @@ class AgiteMeApp {
 
           <!-- Dica de Ouro -->
           <div style="background: rgba(0,240,255,0.08); border: 1px solid rgba(0,240,255,0.25); padding: 12px; border-radius: 10px; margin-bottom: 20px;">
-            <div style="font-family: var(--font-hud); font-size: 0.75rem; color: var(--neon-cyan); margin-bottom: 4px;">
-              💡 DICA:
+            <div style="font-family: var(--font-hud); font-size: 0.75rem; color: var(--neon-cyan); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 18h6"/>
+                <path d="M10 22h4"/>
+                <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>
+              </svg>
+              DICA DE OURO:
             </div>
             <div style="font-size: 0.82rem; color: #fff; font-style: italic;">
               ${exercise.goldTip}
@@ -2999,7 +4776,19 @@ class AgiteMeApp {
     modalContainer.innerHTML = `
       <div class="modal-overlay">
         <div class="modal-sheet checkout-celebration-card stone-panel">
-          <div class="celebration-trophy">🏛️</div>
+          <div class="celebration-trophy" style="display: flex; justify-content: center; margin-bottom: 8px;">
+            <div style="width: 62px; height: 62px; border-radius: 50%; background: rgba(56, 189, 248, 0.12); border: 1.5px solid rgba(56, 189, 248, 0.4); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 24px rgba(56, 189, 248, 0.35);">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.7));">
+                <path d="M2 9.5L12 4l10 5.5v1H2v-1z" fill="rgba(56, 189, 248, 0.2)" />
+                <line x1="6" y1="11" x2="6" y2="18" />
+                <line x1="10" y1="11" x2="10" y2="18" />
+                <line x1="14" y1="11" x2="14" y2="18" />
+                <line x1="18" y1="11" x2="18" y2="18" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+                <line x1="2" y1="21" x2="22" y2="21" />
+              </svg>
+            </div>
+          </div>
           <h2 class="celebration-title">TREINO CONSAGRADO!</h2>
           <div class="celebration-subtitle">Você venceu o dia no templo de ferro.</div>
 
@@ -3017,7 +4806,12 @@ class AgiteMeApp {
               <div class="recap-lbl">Exercícios Feitos</div>
             </div>
             <div class="recap-box">
-              <div class="recap-val" style="color: var(--solar-gold);">+1 DIA 🔥</div>
+              <div class="recap-val" style="color: var(--solar-gold); display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                +1 DIA
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z" fill="rgba(249,115,22,0.3)"/>
+                </svg>
+              </div>
               <div class="recap-lbl">Streak Atualizado</div>
             </div>
           </div>
@@ -3027,7 +4821,7 @@ class AgiteMeApp {
           </p>
 
           <button class="btn-enter-temple" id="btn-close-checkout">
-            RETORNAR AO TEMPLO ⚡
+            RETORNAR AO TEMPLO 
           </button>
         </div>
       </div>
@@ -3042,5 +4836,6 @@ class AgiteMeApp {
 
 // Inicializa a aplicação assim que o DOM carregar
 window.addEventListener('DOMContentLoaded', () => {
+  initPixelStars();
   new AgiteMeApp();
 });

@@ -1,27 +1,29 @@
-// Gerenciador de Armazenamento Local e Métricas de Streaks
+import { DEFAULT_ROUTINES } from '../data/routines.js';
 
 const STORAGE_KEYS = {
   PROFILE: 'agtm_profile',
   HISTORY: 'agtm_history',
   ACTIVE_SESSION: 'agtm_active_session',
   SETTINGS: 'agtm_settings',
-  CHAT_HISTORY: 'agtm_oracle_chat'
+  CHAT_HISTORY: 'agtm_oracle_chat',
+  ROUTINES: 'agtm_routines'
 };
 
-// Perfil Padrão Inicial
+// Perfil Padrão Inicial (Novo Visitante / Pré-Onboarding)
 const DEFAULT_PROFILE = {
   userId: '',
   email: '',
-  name: 'João Pedro',
-  age: 23,
-  weight: 78,
-  height: 179,
+  name: '',
+  age: 24,
+  weight: 75,
+  height: 178,
   goal: 'hipertrofia',
   frequency: 4,
   auraColor: '#38bdf8',
   avatarUrl: '',
   geminiApiKey: '',
-  isOnboarded: true,
+  isOnboarded: false,
+  hasConfiguredBio: false,
   createdAt: new Date().toISOString()
 };
 
@@ -129,6 +131,56 @@ export const StorageService = {
     const key = `${STORAGE_KEYS.ACTIVE_SESSION}_${slug}`;
     localStorage.removeItem(key);
     if (slug === 'joao') localStorage.removeItem(STORAGE_KEYS.ACTIVE_SESSION);
+  },
+
+  // Gerenciamento de Rotinas / Portais Dinâmicos
+  getRoutines() {
+    const slug = this.getCurrentUserSlug();
+    const key = `${STORAGE_KEYS.ROUTINES}_${slug}`;
+    try {
+      const data = localStorage.getItem(key);
+      if (data) {
+        return JSON.parse(data);
+      }
+    } catch {}
+    return JSON.parse(JSON.stringify(DEFAULT_ROUTINES));
+  },
+
+  saveRoutines(routines) {
+    const slug = this.getCurrentUserSlug();
+    const key = `${STORAGE_KEYS.ROUTINES}_${slug}`;
+    try {
+      localStorage.setItem(key, JSON.stringify(routines));
+    } catch {}
+  },
+
+  swapExerciseInRoutine(routineId, oldExId, newExId) {
+    const routines = this.getRoutines();
+    const routine = routines.find(r => r.id === routineId);
+    if (!routine) return null;
+
+    const targetIndex = routine.exercises.findIndex(e => e.exerciseId === oldExId);
+    if (targetIndex === -1) {
+      // Tenta encontrar por matching flexível
+      const flexIdx = routine.exercises.findIndex(e => e.exerciseId?.toLowerCase().includes(oldExId.toLowerCase()) || oldExId.toLowerCase().includes(e.exerciseId?.toLowerCase()));
+      if (flexIdx !== -1) {
+        routine.exercises[flexIdx].exerciseId = newExId;
+        this.saveRoutines(routines);
+        return routine;
+      }
+      return null;
+    }
+
+    routine.exercises[targetIndex].exerciseId = newExId;
+    this.saveRoutines(routines);
+    return routine;
+  },
+
+  resetRoutines() {
+    const slug = this.getCurrentUserSlug();
+    const key = `${STORAGE_KEYS.ROUTINES}_${slug}`;
+    localStorage.removeItem(key);
+    return JSON.parse(JSON.stringify(DEFAULT_ROUTINES));
   },
 
   getChatHistory() {
@@ -286,7 +338,7 @@ export const StorageService = {
     };
   },
 
-  // Carregar Dados Demo para Recrutadores / Apresentação de Portfólio
+  // Carregar Dados Demo apresentação de Portfólio
   loadDemoData() {
     const today = new Date();
     const demoDates = [];

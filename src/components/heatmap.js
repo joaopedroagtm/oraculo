@@ -1,8 +1,66 @@
-// Componente: Santuário 3D das Colunas Gregas & Ciclo Lunar • AGiTe-Me!
-// Substitui o mapa plano 2D estilo GitHub por uma colunata grega 3D com pilares arquitetônicos,
+// Componente: Santuário 3D das Colunas Gregas & Ciclo Lunar
 // chamas sagradas, mini-luas místicas e fases lunares da constância.
 
 import { sound } from '../services/audio.js';
+
+export function renderLunarPhaseSVG(phaseIdx, size = 34) {
+  const uid = `lunar-svg-${phaseIdx}-${Math.round(size)}`;
+  return `
+    <div class="lunar-svg-orb" style="width: ${size}px; height: ${size}px;">
+      <svg viewBox="0 0 100 100" width="${size}" height="${size}">
+        <defs>
+          <filter id="glow-${uid}" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="0" stdDeviation="3.5" flood-color="#ffffff" flood-opacity="0.65"/>
+          </filter>
+          <radialGradient id="dark-side-${uid}" cx="40%" cy="40%" r="65%">
+            <stop offset="0%" stop-color="#1e293b"/>
+            <stop offset="70%" stop-color="#0f172a"/>
+            <stop offset="100%" stop-color="#020617"/>
+          </radialGradient>
+          <radialGradient id="light-side-${uid}" cx="40%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="70%" stop-color="#f1f5f9"/>
+            <stop offset="100%" stop-color="#cbd5e1"/>
+          </radialGradient>
+          <linearGradient id="rim-${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+            <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.6"/>
+          </linearGradient>
+        </defs>
+
+        ${phaseIdx === 0 ? `
+          <!-- Lua Nova: Corpo Escuro com Halo e Arco de Luz -->
+          <circle cx="50" cy="50" r="46" fill="url(#dark-side-${uid})" stroke="url(#rim-${uid})" stroke-width="1.8" />
+          <path d="M 50 4 A 46 46 0 0 0 50 96 A 42 46 0 0 1 50 4" fill="#ffffff" opacity="0.5" filter="url(#glow-${uid})" />
+          <circle cx="36" cy="38" r="7" fill="#334155" opacity="0.4" />
+          <circle cx="62" cy="34" r="10" fill="#1e293b" opacity="0.5" />
+          <circle cx="54" cy="65" r="11" fill="#1e293b" opacity="0.4" />
+        ` : phaseIdx === 1 ? `
+          <!-- Quarto Crescente: Metade Direita Iluminada -->
+          <circle cx="50" cy="50" r="46" fill="url(#dark-side-${uid})" stroke="rgba(255,255,255,0.2)" stroke-width="1.2" />
+          <path d="M 50 4 A 46 46 0 0 1 50 96 Z" fill="url(#light-side-${uid})" filter="url(#glow-${uid})" />
+          <circle cx="35" cy="40" r="7" fill="#334155" opacity="0.35" />
+          <circle cx="68" cy="45" r="9" fill="#cbd5e1" opacity="0.45" />
+          <circle cx="60" cy="68" r="8" fill="#cbd5e1" opacity="0.4" />
+        ` : phaseIdx === 2 ? `
+          <!-- Lua Cheia: Plenamente Iluminada Radiante -->
+          <circle cx="50" cy="50" r="46" fill="url(#light-side-${uid})" filter="url(#glow-${uid})" stroke="#ffffff" stroke-width="1" />
+          <circle cx="34" cy="38" r="8" fill="#cbd5e1" opacity="0.55" />
+          <circle cx="64" cy="32" r="11" fill="#94a3b8" opacity="0.4" />
+          <circle cx="58" cy="65" r="13" fill="#cbd5e1" opacity="0.5" />
+          <circle cx="32" cy="68" r="7" fill="#94a3b8" opacity="0.35" />
+        ` : `
+          <!-- Quarto Minguante: Metade Esquerda Iluminada -->
+          <circle cx="50" cy="50" r="46" fill="url(#dark-side-${uid})" stroke="rgba(255,255,255,0.2)" stroke-width="1.2" />
+          <path d="M 50 4 A 46 46 0 0 0 50 96 Z" fill="url(#light-side-${uid})" filter="url(#glow-${uid})" />
+          <circle cx="32" cy="45" r="9" fill="#cbd5e1" opacity="0.45" />
+          <circle cx="40" cy="68" r="8" fill="#cbd5e1" opacity="0.4" />
+          <circle cx="65" cy="40" r="7" fill="#334155" opacity="0.35" />
+        `}
+      </svg>
+    </div>
+  `;
+}
 
 export class WorkoutHeatmap {
   constructor(containerElement, activeDaysSet = new Set(), history = []) {
@@ -71,35 +129,35 @@ export class WorkoutHeatmap {
     const monthName = now.toLocaleDateString('pt-BR', { month: 'long' });
 
     const phases = [
-      { 
-        name: 'Semana I (1-7)', 
-        phase: 'Lua Nova', 
-        icon: '🌑', 
-        desc: 'Fundação da Força & Conexão Neural', 
+      {
+        name: 'Semana I (1-7)',
+        phase: 'Lua Nova',
+        icon: '🌑',
+        desc: 'Fundação da Força & Conexão Neural',
         threshold: 2,
         coaching: 'Início do ciclo: foque na execução impecável, calibragem de cargas e recuperação neural.'
       },
-      { 
-        name: 'Semana II (8-14)', 
-        phase: 'Quarto Crescente', 
-        icon: '🌓', 
-        desc: 'Elevação da Carga & Sobrecarga Progressiva', 
+      {
+        name: 'Semana II (8-14)',
+        phase: 'Quarto Crescente',
+        icon: '🌓',
+        desc: 'Elevação da Carga & Sobrecarga Progressiva',
         threshold: 3,
         coaching: 'Fase de expansão: aumente ligeiramente as cargas ou adicione 1-2 repetições em séries chave.'
       },
-      { 
-        name: 'Semana III (15-21)', 
-        phase: 'Lua Cheia', 
-        icon: '🌕', 
-        desc: 'Pico de Intensidade & Energia Cósmica Máxima', 
+      {
+        name: 'Semana III (15-21)',
+        phase: 'Lua Cheia',
+        icon: '🌕',
+        desc: 'Pico de Intensidade & Energia Cósmica Máxima',
         threshold: 3,
         coaching: 'Ápice mensal: energia no pico. Busque seus melhores recordes de volume com segurança.'
       },
-      { 
-        name: 'Semana IV (22+)', 
-        phase: 'Quarto Minguante', 
-        icon: '🌘', 
-        desc: 'Consolidação, Densidade & Aço', 
+      {
+        name: 'Semana IV (22+)',
+        phase: 'Quarto Minguante',
+        icon: '🌘',
+        desc: 'Consolidação, Densidade & Aço',
         threshold: 3,
         coaching: 'Fechamento do ciclo: consolide a força conquistada e prepare o corpo para o próximo mês.'
       }
@@ -157,7 +215,15 @@ export class WorkoutHeatmap {
       <!-- Cabeçalho do Santuário 3D -->
       <div class="sanctuary-header">
         <div class="sanctuary-title-group">
-          <div class="sanctuary-icon-glow">🏛️</div>
+          <div class="sanctuary-icon-glow">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f472b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 9.5L12 4l10 5.5v1H2v-1z" />
+              <line x1="6" y1="11" x2="6" y2="18" />
+              <line x1="12" y1="11" x2="12" y2="18" />
+              <line x1="18" y1="11" x2="18" y2="18" />
+              <line x1="2" y1="21" x2="22" y2="21" />
+            </svg>
+          </div>
           <div>
             <h3 class="sanctuary-title">SANTUÁRIO DOS PILARES SEMANAIS</h3>
             <p class="sanctuary-subtitle">7 Pilares Semanais • Cada pilar erguido é um treino concluído</p>
@@ -186,8 +252,8 @@ export class WorkoutHeatmap {
       <div class="colonnade-3d-stage-wrapper">
         <div class="colonnade-3d-ground">
           ${weekDays.map(day => {
-            const isSelected = day.index === this.selectedDayIndex;
-            return `
+      const isSelected = day.index === this.selectedDayIndex;
+      return `
               <div 
                 class="greek-pillar-column ${day.isCompleted ? 'pillar-elevated' : 'pillar-dormant'} ${day.isToday ? 'pillar-is-today' : ''} ${isSelected ? 'pillar-inspected' : ''}" 
                 data-day-index="${day.index}"
@@ -199,12 +265,17 @@ export class WorkoutHeatmap {
                 <div class="pillar-celestial-crown">
                   ${day.isCompleted ? `
                     <div class="pillar-flame-orb" title="Treino Concluído!">
-                      <span class="flame-inner">🌕</span>
+                      <span class="flame-inner" style="display: inline-flex; align-items: center; justify-content: center;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                          <circle cx="12" cy="12" r="10" fill="#fef08a" />
+                          <circle cx="12" cy="12" r="10" stroke="#f59e0b" stroke-width="1.5" />
+                        </svg>
+                      </span>
                       <div class="flame-aura"></div>
                     </div>
                   ` : day.isToday ? `
                     <div class="pillar-beacon-pulse" title="Erga este pilar hoje!">
-                      <span class="beacon-spark">⚡</span>
+                      <span class="beacon-spark"></span>
                     </div>
                   ` : `
                     <div class="pillar-rest-star">
@@ -245,14 +316,22 @@ export class WorkoutHeatmap {
                 </div>
               </div>
             `;
-          }).join('')}
+    }).join('')}
         </div>
       </div>
 
       <!-- Painel de Inspeção do Pilar Selecionado -->
       <div class="pillar-oracle-detail stone-panel-inner" id="pillar-inspector">
         <div class="inspector-badge-row">
-          <span class="inspector-day-tag">🏛️ PILAR DE ${selectedDay.fullName.toUpperCase()} (${selectedDay.dayNum} ${selectedDay.monthStr.toUpperCase()})</span>
+          <span class="inspector-day-tag" style="display: inline-flex; align-items: center; gap: 5px;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 9.5L12 4l10 5.5v1H2v-1z" />
+              <line x1="6" y1="11" x2="6" y2="18" />
+              <line x1="12" y1="11" x2="12" y2="18" />
+              <line x1="18" y1="11" x2="18" y2="18" />
+            </svg>
+            PILAR DE ${selectedDay.fullName.toUpperCase()} (${selectedDay.dayNum} ${selectedDay.monthStr.toUpperCase()})
+          </span>
           ${selectedDay.isCompleted ? `
             <span class="inspector-status-pill completed">✓ TREINO CONCLUÍDO</span>
           ` : selectedDay.isToday ? `
@@ -263,7 +342,12 @@ export class WorkoutHeatmap {
               </svg>AGUARDANDO TREINO HOJE
             </span>
           ` : `
-            <span class="inspector-status-pill rest">🌙 REPOUSO DO GUERREIRO</span>
+            <span class="inspector-status-pill rest" style="display: inline-flex; align-items: center; gap: 4px;">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+              REPOUSO DO GUERREIRO
+            </span>
           `}
         </div>
         <p class="inspector-text">
@@ -282,13 +366,15 @@ export class WorkoutHeatmap {
       <!-- Ciclo Lunar de Constância (4 Fases Lunares do Mês) -->
       <div class="lunar-phases-section">
         <div class="lunar-phases-header">
-          <span class="lunar-header-title">🌕 CICLO LUNAR • ${lunarData.monthLabel}</span>
+          <span class="lunar-header-title" style="display: inline-flex; align-items: center; gap: 7px;">
+            ${renderLunarPhaseSVG(2, 20)} CICLO LUNAR • ${lunarData.monthLabel}
+          </span>
           <span class="lunar-header-sub">Toque em uma fase para ver foco e metas</span>
         </div>
         <div class="lunar-phases-track">
           ${lunarData.phases.map((phase, pIdx) => {
-            const isSelected = pIdx === this.selectedLunarPhaseIndex;
-            return `
+      const isSelected = pIdx === this.selectedLunarPhaseIndex;
+      return `
               <div 
                 class="lunar-phase-pod ${phase.isAchieved ? 'pod-consecrated' : ''} ${phase.isCurrentWeek ? 'pod-current-week' : ''} ${isSelected ? 'pod-selected' : ''}"
                 data-lunar-index="${pIdx}"
@@ -297,7 +383,7 @@ export class WorkoutHeatmap {
                 title="Toque para ver foco da ${phase.phase}"
               >
                 <div class="lunar-orb-glow">
-                  <span class="lunar-emoji">${phase.icon}</span>
+                  ${renderLunarPhaseSVG(pIdx, 36)}
                 </div>
                 <div class="lunar-pod-info">
                   <div class="lunar-pod-name">${phase.name}</div>
@@ -308,7 +394,7 @@ export class WorkoutHeatmap {
                 </div>
               </div>
             `;
-          }).join('')}
+    }).join('')}
         </div>
 
         <!-- Painel Interativo de Detalhes da Fase Lunar Selecionada -->
@@ -330,7 +416,7 @@ export class WorkoutHeatmap {
         if (!isNaN(idx) && idx !== this.selectedDayIndex) {
           this.selectedDayIndex = idx;
           this.updateInspector(weekDays[idx]);
-          
+
           pillarElements.forEach(p => p.classList.remove('pillar-inspected'));
           el.classList.add('pillar-inspected');
 
@@ -349,10 +435,10 @@ export class WorkoutHeatmap {
           this.selectedLunarPhaseIndex = idx;
           lunarPods.forEach(p => p.classList.remove('pod-selected'));
           pod.classList.add('pod-selected');
-          
+
           const freshLunarData = this.getMonthlyLunarPhases();
           this.updateLunarInspector(freshLunarData.phases[idx]);
-          
+
           sound.playTapSound();
           if ('vibrate' in navigator) navigator.vibrate(30);
         }
@@ -366,7 +452,15 @@ export class WorkoutHeatmap {
 
     inspector.innerHTML = `
       <div class="inspector-badge-row">
-        <span class="inspector-day-tag">🏛️ PILAR DE ${day.fullName.toUpperCase()} (${day.dayNum} ${day.monthStr.toUpperCase()})</span>
+        <span class="inspector-day-tag" style="display: inline-flex; align-items: center; gap: 5px;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 9.5L12 4l10 5.5v1H2v-1z" />
+            <line x1="6" y1="11" x2="6" y2="18" />
+            <line x1="12" y1="11" x2="12" y2="18" />
+            <line x1="18" y1="11" x2="18" y2="18" />
+          </svg>
+          PILAR DE ${day.fullName.toUpperCase()} (${day.dayNum} ${day.monthStr.toUpperCase()})
+        </span>
         ${day.isCompleted ? `
           <span class="inspector-status-pill completed">✓ TREINO CONCLUÍDO</span>
         ` : day.isToday ? `
@@ -377,7 +471,12 @@ export class WorkoutHeatmap {
             </svg>AGUARDANDO TREINO HOJE
           </span>
         ` : `
-          <span class="inspector-status-pill rest">🌙 REPOUSO DO GUERREIRO</span>
+          <span class="inspector-status-pill rest" style="display: inline-flex; align-items: center; gap: 4px;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            REPOUSO DO GUERREIRO
+          </span>
         `}
       </div>
       <p class="inspector-text">
@@ -403,7 +502,9 @@ export class WorkoutHeatmap {
     inspector.innerHTML = `
       <div class="lunar-inspector-header">
         <div class="lunar-inspector-title">
-          <span class="lunar-inspector-emoji">${phase.icon}</span>
+          <div style="flex-shrink: 0; filter: drop-shadow(0 0 12px rgba(255,255,255,0.35));">
+            ${renderLunarPhaseSVG(this.selectedLunarPhaseIndex, 46)}
+          </div>
           <div>
             <div class="lunar-inspector-name">${phase.phase} • ${phase.name}</div>
             <div class="lunar-inspector-focus">${phase.desc}</div>
@@ -419,7 +520,13 @@ export class WorkoutHeatmap {
       </div>
 
       <div class="lunar-coaching-box">
-        <span class="coaching-spark">💡</span>
+        <span class="coaching-spark" style="display: inline-flex; align-items: center; justify-content: center;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18h6"/>
+            <path d="M10 22h4"/>
+            <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>
+          </svg>
+        </span>
         <p class="coaching-text">${phase.coaching}</p>
       </div>
     `;

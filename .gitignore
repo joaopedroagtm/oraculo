@@ -3,11 +3,11 @@ node_modules/
 .pnp
 .pnp.js
 
-# Build de produção (Vite gera na Vercel)
+# Build de produção 
 dist/
 dist-ssr/
 
-# Arquivos de ambiente e segredos locais (NUNCA subir pro GitHub!)
+# Arquivos de ambiente e segredos locais
 .env
 .env.local
 .env.*.local

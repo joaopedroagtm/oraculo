@@ -1,4 +1,4 @@
-// Utilitário Astronômico: Cálculo Real da Fase Lunar e Iluminação • AGiTe-Me!
+// Utilitário Astronômico: Cálculo Real da Fase Lunar e Iluminação
 // Baseado no ciclo sinódico lunar médio (29.53058770576 dias).
 
 export function getAstronomicalMoonPhase(date = new Date()) {
@@ -60,7 +60,7 @@ export function getAstronomicalMoonPhase(date = new Date()) {
     phaseIcon = '🌑';
   }
 
-  // Descrição mística contextualizada para o treino
+  // Descrição contextualizada para o treino
   let cosmicBlessing = 'O início do ciclo lunar convida à renovação e ao foco primordial na técnica.';
   if (phaseCategory === 'crescente') {
     cosmicBlessing = 'Energia cósmica em expansão: período perfeito para progressão gradual de cargas.';
@@ -72,9 +72,9 @@ export function getAstronomicalMoonPhase(date = new Date()) {
 
   return {
     date,
-    age: Math.round(age * 10) / 10, // ex: 0.3 dias
+    age: Math.round(age * 10) / 10, 
     phaseFraction,
-    illuminationPercent, // ex: 0%, 15%, 85%, 100%
+    illuminationPercent, 
     phaseName,
     phaseCategory,
     phaseIcon,

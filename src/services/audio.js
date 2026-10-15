@@ -1,5 +1,5 @@
-// Síntese Sonora Etérea & Bips de Academia • AGiTe-Me!
-// Utiliza a Web Audio API nativa para criar efeitos de áudio 90s sem arquivos externos.
+// Síntese Sonora Etérea & Bips 
+// Utiliza a Web Audio API nativa para criar efeitos de áudio sem arquivos externos.
 
 class AudioFeedback {
   constructor() {
@@ -117,7 +117,7 @@ class AudioFeedback {
     try {
       this.init();
       if (!this.ctx) return;
-      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 (Acorde Maior Celestial)
+      const notes = [523.25, 659.25, 783.99, 1046.50]; 
       const now = this.ctx.currentTime;
 
       notes.forEach((freq, idx) => {
