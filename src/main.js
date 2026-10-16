@@ -3806,8 +3806,8 @@ class AgiteMeApp {
 
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); display: flex; align-items: center; justify-content: center;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.16); display: flex; align-items: center; justify-content: center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
                 </svg>
               </div>
@@ -3815,7 +3815,7 @@ class AgiteMeApp {
                 <h3 style="font-family: var(--font-carved); font-size: 1.1rem; color: #fff; margin: 0;">
                   MINHA CONTA
                 </h3>
-                <small style="color: var(--neon-cyan); font-size: 0.68rem;">Sincronize entre seus aparelhos</small>
+                <small style="color: #94a3b8; font-size: 0.68rem;">Sincronize entre seus aparelhos</small>
               </div>
             </div>
             <button id="btn-close-auth-modal" style="background: none; border: none; color: var(--concrete-400); font-size: 1.6rem; cursor: pointer;">&times;</button>
@@ -3823,10 +3823,10 @@ class AgiteMeApp {
 
           <!-- Abas Entrar / Cadastrar -->
           <div style="display: flex; border-bottom: 1px solid rgba(255,255,255,0.12); margin-bottom: 16px;">
-            <button id="tab-auth-login" class="filter-pill active" style="flex: 1; border-radius: 0; background: none; border-bottom: 2px solid #38bdf8;">
+            <button id="tab-auth-login" class="filter-pill active" style="flex: 1; border-radius: 0; background: none; border-bottom: 2px solid #ffffff; color: #ffffff;">
               ENTRAR
             </button>
-            <button id="tab-auth-signup" class="filter-pill" style="flex: 1; border-radius: 0; background: none; border-bottom: 2px solid transparent;">
+            <button id="tab-auth-signup" class="filter-pill" style="flex: 1; border-radius: 0; background: none; border-bottom: 2px solid transparent; color: #94a3b8;">
               CRIAR CONTA
             </button>
           </div>
@@ -3847,9 +3847,9 @@ class AgiteMeApp {
               <input type="password" class="form-input" id="auth-password" placeholder="••••••••" minlength="6" required />
             </div>
 
-            <div id="auth-error-msg" style="display: none; padding: 8px 12px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); border-radius: 8px; color: #fca5a5; font-size: 0.74rem; margin-bottom: 12px;"></div>
+            <div id="auth-error-msg" style="display: none; padding: 8px 12px; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35); border-radius: 8px; color: #fca5a5; font-size: 0.74rem; margin-bottom: 12px;"></div>
 
-            <button type="submit" id="btn-submit-auth" class="btn-enter-temple" style="width: 100%; padding: 12px; font-size: 0.85rem; margin-bottom: 10px;">
+            <button type="submit" id="btn-submit-auth" class="btn-enter-temple" style="width: 100%; padding: 12px; font-size: 0.85rem; margin-bottom: 10px; background: #ffffff; color: #000000; font-weight: 700;">
               ENTRAR
             </button>
           </form>
@@ -3877,9 +3877,11 @@ class AgiteMeApp {
     tabLogin.addEventListener('click', () => {
       mode = 'login';
       tabLogin.classList.add('active');
-      tabLogin.style.borderBottomColor = '#38bdf8';
+      tabLogin.style.borderBottomColor = '#ffffff';
+      tabLogin.style.color = '#ffffff';
       tabSignup.classList.remove('active');
       tabSignup.style.borderBottomColor = 'transparent';
+      tabSignup.style.color = '#94a3b8';
       nameGroup.style.display = 'none';
       submitBtn.textContent = 'ENTRAR';
       errorBox.style.display = 'none';
@@ -3888,9 +3890,11 @@ class AgiteMeApp {
     tabSignup.addEventListener('click', () => {
       mode = 'signup';
       tabSignup.classList.add('active');
-      tabSignup.style.borderBottomColor = '#38bdf8';
+      tabSignup.style.borderBottomColor = '#ffffff';
+      tabSignup.style.color = '#ffffff';
       tabLogin.classList.remove('active');
       tabLogin.style.borderBottomColor = 'transparent';
+      tabLogin.style.color = '#94a3b8';
       nameGroup.style.display = 'block';
       submitBtn.textContent = 'Criar nova conta';
       errorBox.style.display = 'none';
@@ -4070,6 +4074,22 @@ class AgiteMeApp {
     const modalContainer = document.querySelector('#modal-container');
     const p = this.profile || StorageService.getProfile();
 
+    if (!this._tempOnboarding) {
+      this._tempOnboarding = {
+        name: p.name || '',
+        weight: p.weight || 75,
+        height: p.height || 178,
+        age: p.age || 24,
+        goal: p.goal || 'hipertrofia',
+        frequency: p.frequency || 4,
+        email: p.email || '',
+        password: ''
+      };
+    }
+
+    const t = this._tempOnboarding;
+
+    // SLIDES 0, 1, 2: INTRODUÇÃO
     if (stepIndex < 3) {
       const slides = [
         {
@@ -4090,7 +4110,7 @@ class AgiteMeApp {
           badge: '03 | ORÁCULO IA',
           svg: ONBOARDING_SVGS.oraculo,
           title: 'ORÁCULO IA',
-          desc: 'Seu guia personalizado para treinos. Inteligência artificial para direcionar sua jornada. Faça perguntas sobre treino, alimentação, suplementação e descanso.',
+          desc: 'Seu guia personalizado para treinos. Inteligência artificial para direcionar sua jornada com suporte a rotinas dinâmicas.',
           btnText: 'COMEÇAR JORNADA'
         }
       ];
@@ -4115,7 +4135,6 @@ class AgiteMeApp {
                 <span class="onboarding-apple-dot ${stepIndex === 0 ? 'active' : ''}"></span>
                 <span class="onboarding-apple-dot ${stepIndex === 1 ? 'active' : ''}"></span>
                 <span class="onboarding-apple-dot ${stepIndex === 2 ? 'active' : ''}"></span>
-                <span class="onboarding-apple-dot ${stepIndex === 3 ? 'active' : ''}"></span>
               </div>
               <button type="button" class="onboarding-apple-btn glow" id="btn-ob-next">
                 <span>${current.btnText}</span>
@@ -4139,23 +4158,22 @@ class AgiteMeApp {
       return;
     }
 
-
-    // STEP === 'calibrate'
+    // CONFIGURAÇÕES DE OBJETIVO E FREQUÊNCIA
     const GOAL_CONFIG = {
       hipertrofia: {
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v14"/><path d="M18 5v14"/><path d="M2 9v6"/><path d="M22 9v6"/><line x1="6" y1="12" x2="18" y2="12"/></svg>`,
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v14"/><path d="M18 5v14"/><path d="M2 9v6"/><path d="M22 9v6"/><line x1="6" y1="12" x2="18" y2="12"/></svg>`,
         title: 'Hipertrofia Muscular',
         sub: 'Ganho de massa magra & volume',
         desc: 'Foco em tensão mecânica contínua, sobrecarga progressiva e densidade muscular.'
       },
       emagrecimento: {
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z"/></svg>`,
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z"/></svg>`,
         title: 'Definição & Queima',
         sub: 'Queima de gordura & definição',
         desc: 'Foco em densidade metabólica, gasto calórico e tônus atlético preservando músculos.'
       },
       condicionamento: {
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
         title: 'Força & Condicionamento',
         sub: 'Performance atlética & funcional',
         desc: 'Foco em potência, resistência aeróbica e condicionamento integral para a vida.'
@@ -4164,205 +4182,465 @@ class AgiteMeApp {
 
     const FREQ_CONFIG = {
       3: {
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M12 20v-8"/><path d="M12 12c0-3.5 2.5-6 6-6 0 3.5-2.5 6-6 6z"/><path d="M12 15c0-3-2-5-5-5 0 3 2 5 5 5z"/></svg>`,
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M12 20v-8"/><path d="M12 12c0-3.5 2.5-6 6-6 0 3.5-2.5 6-6 6z"/><path d="M12 15c0-3-2-5-5-5 0 3 2 5 5 5z"/></svg>`,
         title: '3 Dias na Semana',
         sub: 'Ideal para iniciantes ou rotinas cheias',
         desc: 'Descanso intercalado entre treinos, excelente para adaptação e recuperação física.'
       },
       4: {
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
         title: '4 Dias na Semana',
         sub: 'Divisão recomendada (Equilíbrio ideal)',
         desc: 'O ponto ideal de consistência semanal para evolução sólida e recuperação muscular.'
       },
       5: {
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3 4 5 4 9a4 4 0 0 1-8 0c0-2 1-3.5 2-5 0 2 1 3 2 3s2-2 0-7z"/><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12"/></svg>`,
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3 4 5 4 9a4 4 0 0 1-8 0c0-2 1-3.5 2-5 0 2 1 3 2 3s2-2 0-7z"/><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12"/></svg>`,
         title: '5 Dias na Semana',
         sub: 'Alta frequência e volume elevado',
         desc: 'Para quem busca ritmo avançado de treinos com divisão segmentada por grupamento.'
       }
     };
 
-    const currentGoalKey = p.goal || 'hipertrofia';
-    const currentGoalObj = GOAL_CONFIG[currentGoalKey] || GOAL_CONFIG.hipertrofia;
-
-    const currentFreqKey = p.frequency || 4;
-    const currentFreqObj = FREQ_CONFIG[currentFreqKey] || FREQ_CONFIG[4];
-
-    modalContainer.innerHTML = `
-      <div class="onboarding-fullscreen-portal" id="onboarding-calibrate-portal">
-        <div class="onboarding-apple-container" style="text-align: left;">
-          <div class="onboarding-apple-nav" style="justify-content: flex-start;">
-            <button type="button" class="onboarding-apple-skip" id="ob-back-to-gateway" style="padding-left: 0; display: inline-flex; align-items: center; gap: 4px;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-              <span>Voltar</span>
-            </button>
-          </div>
-
-          <div style="margin: 8px 0 14px;">
-            <h2 class="onboarding-apple-title" style="font-size: 1.6rem; text-align: left; margin: 0 0 4px;">
-              ADENTRE O TEMPLO
-            </h2>
-            <p class="onboarding-apple-desc" style="text-align: left; max-width: 100%; font-size: 0.82rem; margin: 0;">
-              Ajuste suas métricas para que o Oráculo calcule os volumes, cargas e descansos ideais do seu templo.
-            </p>
-          </div>
-
-          <form id="onboarding-form" style="width: 100%;">
-            <!-- NOME DO USUÁRIO (OPCIONAL / ANÔNIMO COM ?) -->
-            <div class="form-group">
-              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
-                <label class="form-label" style="margin: 0;">Como devemos te chamar?</label>
-                <span style="font-size: 0.7rem; color: #94a3b8;">Opcional</span>
-              </div>
-              <div class="field-with-icon-wrapper">
-                <div class="field-prefix-icon">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                </div>
-                <input type="text" class="form-input field-input-with-icon" id="ob-name" value="${p.name || ''}" placeholder="Seu nome ou apelido (ex: Carlos, Marina...)" />
-                <button type="button" class="btn-anonymous-badge" id="btn-set-anon" title="Entrar sem nome com avatar ?">
-                  <span style="font-weight: 800; color: #38bdf8;">?</span>
-                  <span>Anônimo</span>
-                </button>
-              </div>
-              <div class="form-field-helper">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                <span>Se deixar em branco, você entrará anônimo com o símbolo <strong>?</strong> e poderá adicionar seu nome quando quiser.</span>
-              </div>
-            </div>
-
-            <!-- MÉTRICAS FÍSICAS REFINADAS -->
-            <div style="margin-bottom: 14px;">
-              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
-                <label class="form-label" style="margin: 0;">Métricas Físicas</label>
-                <span style="font-size: 0.7rem; color: #94a3b8;">Valores estimados</span>
-              </div>
-              <div class="metrics-stepper-grid">
-                <div class="metric-stepper-card">
-                  <div class="metric-card-label">PESO</div>
-                  <div class="metric-input-row">
-                    <input type="number" class="metric-num-input" id="ob-weight" value="${p.weight || 75}" min="30" max="250" />
-                    <span class="metric-unit">kg</span>
-                  </div>
-                  <div class="metric-actions">
-                    <button type="button" class="metric-btn-step" data-step-target="ob-weight" data-delta="-1" aria-label="Diminuir peso">−</button>
-                    <button type="button" class="metric-btn-step" data-step-target="ob-weight" data-delta="1" aria-label="Aumentar peso">+</button>
-                  </div>
-                </div>
-
-                <div class="metric-stepper-card">
-                  <div class="metric-card-label">ALTURA</div>
-                  <div class="metric-input-row">
-                    <input type="number" class="metric-num-input" id="ob-height" value="${p.height || 178}" min="100" max="230" />
-                    <span class="metric-unit">cm</span>
-                  </div>
-                  <div class="metric-actions">
-                    <button type="button" class="metric-btn-step" data-step-target="ob-height" data-delta="-1" aria-label="Diminuir altura">−</button>
-                    <button type="button" class="metric-btn-step" data-step-target="ob-height" data-delta="1" aria-label="Aumentar altura">+</button>
-                  </div>
-                </div>
-
-                <div class="metric-stepper-card">
-                  <div class="metric-card-label">IDADE</div>
-                  <div class="metric-input-row">
-                    <input type="number" class="metric-num-input" id="ob-age" value="${p.age || 24}" min="12" max="100" />
-                    <span class="metric-unit">anos</span>
-                  </div>
-                  <div class="metric-actions">
-                    <button type="button" class="metric-btn-step" data-step-target="ob-age" data-delta="-1" aria-label="Diminuir idade">−</button>
-                    <button type="button" class="metric-btn-step" data-step-target="ob-age" data-delta="1" aria-label="Aumentar idade">+</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- OBJETIVO PRINCIPAL -->
-            <div class="form-group">
-              <label class="form-label">Objetivo Principal</label>
-              <button type="button" class="custom-select-trigger" id="ob-goal-trigger">
-                <div class="custom-select-trigger-content">
-                  <div class="custom-select-icon" id="ob-goal-icon">${currentGoalObj.icon}</div>
-                  <div class="custom-select-text">
-                    <strong id="ob-goal-title">${currentGoalObj.title}</strong>
-                    <span class="custom-select-sub" id="ob-goal-sub">${currentGoalObj.sub}</span>
-                  </div>
-                </div>
-                <div class="custom-select-badge-action">
-                  <span>Alterar</span>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                </div>
+    // ==========================================
+    // ETAPA 1 DE 3: NOME & MÉTRICAS FÍSICAS (stepIndex === 3)
+    // ==========================================
+    if (stepIndex === 3) {
+      modalContainer.innerHTML = `
+        <div class="onboarding-fullscreen-portal" id="onboarding-calibrate-portal">
+          <div class="onboarding-apple-container" style="text-align: left;">
+            <div class="onboarding-apple-nav" style="justify-content: space-between;">
+              <button type="button" class="onboarding-apple-skip" id="ob-btn-back" style="padding-left: 0; display: inline-flex; align-items: center; gap: 4px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                <span>Voltar</span>
               </button>
-              <input type="hidden" id="ob-goal" value="${currentGoalKey}" />
+              <span class="onboarding-apple-badge">ETAPA 1 DE 3</span>
             </div>
 
-            <!-- FREQUÊNCIA SEMANAL -->
-            <div class="form-group">
-              <label class="form-label">Frequência Semanal Desejada</label>
-              <button type="button" class="custom-select-trigger" id="ob-freq-trigger">
-                <div class="custom-select-trigger-content">
-                  <div class="custom-select-icon" id="ob-freq-icon">${currentFreqObj.icon}</div>
-                  <div class="custom-select-text">
-                    <strong id="ob-freq-title">${currentFreqObj.title}</strong>
-                    <span class="custom-select-sub" id="ob-freq-sub">${currentFreqObj.sub}</span>
+            <div class="onboarding-wizard-progress">
+              <div class="onboarding-wizard-bar active"></div>
+              <div class="onboarding-wizard-bar"></div>
+              <div class="onboarding-wizard-bar"></div>
+            </div>
+
+            <div style="margin: 4px 0 16px;">
+              <h2 class="onboarding-apple-title" style="font-size: 1.6rem; text-align: left; margin: 0 0 6px;">
+                SEU PERFIL
+              </h2>
+              <p class="onboarding-apple-desc" style="text-align: left; max-width: 100%; font-size: 0.84rem; margin: 0;">
+                Defina como te chamar e suas medidas básicas para calibrarmos cargas, volumes e descansos ideais.
+              </p>
+            </div>
+
+            <form id="onboarding-step1-form" style="width: 100%;">
+              <!-- NOME DO USUÁRIO -->
+              <div class="form-group" style="margin-bottom: 18px;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+                  <label class="form-label" style="margin: 0;">Como devemos te chamar?</label>
+                  <span style="font-size: 0.7rem; color: #94a3b8;">Opcional</span>
+                </div>
+                <div class="field-with-icon-wrapper">
+                  <div class="field-prefix-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  </div>
+                  <input type="text" class="form-input field-input-with-icon" id="ob-name" value="${t.name || ''}" placeholder="Seu nome ou apelido (ex: Marco)" />
+                  <button type="button" class="btn-anonymous-badge" id="btn-set-anon" title="Entrar sem nome">
+                    <span style="font-weight: 700;">?</span>
+                    <span>Anônimo</span>
+                  </button>
+                </div>
+                <div class="form-field-helper">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  <span>Você pode alterar seu nome a qualquer momento nas configurações.</span>
+                </div>
+              </div>
+
+              <!-- MÉTRICAS FÍSICAS REFINADAS -->
+              <div style="margin-bottom: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+                  <label class="form-label" style="margin: 0;">Métricas Físicas</label>
+                  <span style="font-size: 0.7rem; color: #94a3b8;">Valores estimados</span>
+                </div>
+                <div class="metrics-stepper-grid">
+                  <div class="metric-stepper-card">
+                    <div class="metric-card-label">PESO</div>
+                    <div class="metric-input-row">
+                      <input type="number" class="metric-num-input" id="ob-weight" value="${t.weight || 75}" min="30" max="250" />
+                      <span class="metric-unit">kg</span>
+                    </div>
+                    <div class="metric-actions">
+                      <button type="button" class="metric-btn-step" data-step-target="ob-weight" data-delta="-1" aria-label="Diminuir peso">−</button>
+                      <button type="button" class="metric-btn-step" data-step-target="ob-weight" data-delta="1" aria-label="Aumentar peso">+</button>
+                    </div>
+                  </div>
+
+                  <div class="metric-stepper-card">
+                    <div class="metric-card-label">ALTURA</div>
+                    <div class="metric-input-row">
+                      <input type="number" class="metric-num-input" id="ob-height" value="${t.height || 178}" min="100" max="230" />
+                      <span class="metric-unit">cm</span>
+                    </div>
+                    <div class="metric-actions">
+                      <button type="button" class="metric-btn-step" data-step-target="ob-height" data-delta="-1" aria-label="Diminuir altura">−</button>
+                      <button type="button" class="metric-btn-step" data-step-target="ob-height" data-delta="1" aria-label="Aumentar altura">+</button>
+                    </div>
+                  </div>
+
+                  <div class="metric-stepper-card">
+                    <div class="metric-card-label">IDADE</div>
+                    <div class="metric-input-row">
+                      <input type="number" class="metric-num-input" id="ob-age" value="${t.age || 24}" min="12" max="100" />
+                      <span class="metric-unit">anos</span>
+                    </div>
+                    <div class="metric-actions">
+                      <button type="button" class="metric-btn-step" data-step-target="ob-age" data-delta="-1" aria-label="Diminuir idade">−</button>
+                      <button type="button" class="metric-btn-step" data-step-target="ob-age" data-delta="1" aria-label="Aumentar idade">+</button>
+                    </div>
                   </div>
                 </div>
-                <div class="custom-select-badge-action">
-                  <span>Alterar</span>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                </div>
+              </div>
+
+              <button type="submit" class="onboarding-apple-btn glow" style="margin-top: 10px; background: #ffffff; color: #000000; font-weight: 800;">
+                <span>CONTINUAR (1/3)</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
-              <input type="hidden" id="ob-frequency" value="${currentFreqKey}" />
-            </div>
-
-            <!-- STATUS LOCAL -->
-            <div class="onboarding-local-status-badge">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              </svg>
-              <span><strong>Modo Local Ativo:</strong> Seus dados ficarão salvos na memória do seu navegador. Você poderá criar uma conta na nuvem a qualquer momento para sincronizar aparelhos.</span>
-            </div>
-
-            <button type="submit" class="onboarding-apple-btn glow" style="margin-top: 14px; background: linear-gradient(135deg, #222634, #12141c); border-color: rgba(255, 255, 255, 0.4);">
-              <span>ENTRAR NO TEMPO</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
-          </form>
-
-          <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px; width: 100%; text-align: center;">
-            <button type="button" id="ob-btn-cloud-auth" style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 999px; width: 100%; height: 44px; color: #cbd5e1; font-size: 0.82rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.2s;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
-              <span>Cadastre-se e entre em qualquer dispositivo</span>
-            </button>
-            <button type="button" id="ob-btn-demo-mode" style="background: transparent; border: none; color: #64748b; font-size: 0.76rem; cursor: pointer; padding: 6px; text-decoration: underline;">
-              Carregar Dados de Demonstração (caso você esteja olhando meu portfólio)
-            </button>
+            </form>
           </div>
         </div>
-      </div>
-    `;
+      `;
 
-    // Botão Voltar ao Slide anterior
-    const btnBack = modalContainer.querySelector('#ob-back-to-gateway');
-    if (btnBack) {
-      btnBack.addEventListener('click', () => {
+      // Handlers Step 1
+      modalContainer.querySelector('#ob-btn-back')?.addEventListener('click', () => {
         sound.playTapSound();
         this.openAppleOnboarding(2);
       });
-    }
 
-    // Ação: Abrir modal de Login/Cadastro Supabase
-    const btnCloud = modalContainer.querySelector('#ob-btn-cloud-auth');
-    if (btnCloud) {
-      btnCloud.addEventListener('click', () => {
-        modalContainer.innerHTML = '';
-        this.openSupabaseAuthModal();
+      const btnAnon = modalContainer.querySelector('#btn-set-anon');
+      const nameInput = modalContainer.querySelector('#ob-name');
+      if (btnAnon && nameInput) {
+        btnAnon.addEventListener('click', () => {
+          sound.playTapSound();
+          nameInput.value = '';
+          nameInput.placeholder = 'Entrando como Anônimo';
+          nameInput.focus();
+        });
+      }
+
+      modalContainer.querySelectorAll('.metric-btn-step').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const targetId = btn.getAttribute('data-step-target');
+          const delta = parseInt(btn.getAttribute('data-delta'), 10) || 1;
+          const input = modalContainer.querySelector(`#${targetId}`);
+          if (input) {
+            let val = parseInt(input.value, 10);
+            if (isNaN(val)) val = 0;
+            const min = parseInt(input.getAttribute('min'), 10);
+            const max = parseInt(input.getAttribute('max'), 10);
+            val += delta;
+            if (!isNaN(min) && val < min) val = min;
+            if (!isNaN(max) && val > max) val = max;
+            input.value = val;
+            sound.playTapSound();
+            if ('vibrate' in navigator) navigator.vibrate(20);
+          }
+        });
       });
+
+      modalContainer.querySelector('#onboarding-step1-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        sound.playTapSound();
+        this._tempOnboarding.name = modalContainer.querySelector('#ob-name').value.trim();
+        this._tempOnboarding.weight = parseFloat(modalContainer.querySelector('#ob-weight').value) || 75;
+        this._tempOnboarding.height = parseFloat(modalContainer.querySelector('#ob-height').value) || 178;
+        this._tempOnboarding.age = parseInt(modalContainer.querySelector('#ob-age').value, 10) || 24;
+        this.openAppleOnboarding(4);
+      });
+
+      return;
     }
 
-    // Ação: Modo Demonstração
-    const btnDemo = modalContainer.querySelector('#ob-btn-demo-mode');
-    if (btnDemo) {
-      btnDemo.addEventListener('click', () => {
+    // ==========================================
+    // ETAPA 2 DE 3: OBJETIVO & FREQUÊNCIA (stepIndex === 4)
+    // ==========================================
+    if (stepIndex === 4) {
+      const currentGoalKey = t.goal || 'hipertrofia';
+      const currentGoalObj = GOAL_CONFIG[currentGoalKey] || GOAL_CONFIG.hipertrofia;
+
+      const currentFreqKey = t.frequency || 4;
+      const currentFreqObj = FREQ_CONFIG[currentFreqKey] || FREQ_CONFIG[4];
+
+      modalContainer.innerHTML = `
+        <div class="onboarding-fullscreen-portal" id="onboarding-calibrate-portal">
+          <div class="onboarding-apple-container" style="text-align: left;">
+            <div class="onboarding-apple-nav" style="justify-content: space-between;">
+              <button type="button" class="onboarding-apple-skip" id="ob-btn-back" style="padding-left: 0; display: inline-flex; align-items: center; gap: 4px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                <span>Voltar</span>
+              </button>
+              <span class="onboarding-apple-badge">ETAPA 2 DE 3</span>
+            </div>
+
+            <div class="onboarding-wizard-progress">
+              <div class="onboarding-wizard-bar active"></div>
+              <div class="onboarding-wizard-bar active"></div>
+              <div class="onboarding-wizard-bar"></div>
+            </div>
+
+            <div style="margin: 4px 0 16px;">
+              <h2 class="onboarding-apple-title" style="font-size: 1.6rem; text-align: left; margin: 0 0 6px;">
+                OBJETIVO & ROTINA
+              </h2>
+              <p class="onboarding-apple-desc" style="text-align: left; max-width: 100%; font-size: 0.84rem; margin: 0;">
+                Escolha seu foco primordial e a frequência de dias semanais que você dedicará ao templo.
+              </p>
+            </div>
+
+            <form id="onboarding-step2-form" style="width: 100%;">
+              <!-- OBJETIVO PRINCIPAL -->
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label">Objetivo Principal</label>
+                <button type="button" class="custom-select-trigger" id="ob-goal-trigger">
+                  <div class="custom-select-trigger-content">
+                    <div class="custom-select-icon" id="ob-goal-icon">${currentGoalObj.icon}</div>
+                    <div class="custom-select-text">
+                      <strong id="ob-goal-title">${currentGoalObj.title}</strong>
+                      <span class="custom-select-sub" id="ob-goal-sub">${currentGoalObj.sub}</span>
+                    </div>
+                  </div>
+                  <div class="custom-select-badge-action">
+                    <span>Alterar</span>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                  </div>
+                </button>
+                <input type="hidden" id="ob-goal" value="${currentGoalKey}" />
+              </div>
+
+              <!-- FREQUÊNCIA SEMANAL -->
+              <div class="form-group" style="margin-bottom: 24px;">
+                <label class="form-label">Frequência Semanal Desejada</label>
+                <button type="button" class="custom-select-trigger" id="ob-freq-trigger">
+                  <div class="custom-select-trigger-content">
+                    <div class="custom-select-icon" id="ob-freq-icon">${currentFreqObj.icon}</div>
+                    <div class="custom-select-text">
+                      <strong id="ob-freq-title">${currentFreqObj.title}</strong>
+                      <span class="custom-select-sub" id="ob-freq-sub">${currentFreqObj.sub}</span>
+                    </div>
+                  </div>
+                  <div class="custom-select-badge-action">
+                    <span>Alterar</span>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                  </div>
+                </button>
+                <input type="hidden" id="ob-frequency" value="${currentFreqKey}" />
+              </div>
+
+              <button type="submit" class="onboarding-apple-btn glow" style="background: #ffffff; color: #000000; font-weight: 800;">
+                <span>AVANÇAR PARA O ACESSO (2/3)</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </form>
+          </div>
+        </div>
+      `;
+
+      // Handlers Step 2
+      modalContainer.querySelector('#ob-btn-back')?.addEventListener('click', () => {
+        sound.playTapSound();
+        this.openAppleOnboarding(3);
+      });
+
+      const goalTrigger = modalContainer.querySelector('#ob-goal-trigger');
+      if (goalTrigger) {
+        goalTrigger.addEventListener('click', () => {
+          sound.playTapSound();
+          const currentVal = modalContainer.querySelector('#ob-goal').value;
+          const goalOptionsList = [
+            { value: 'hipertrofia', icon: GOAL_CONFIG.hipertrofia.icon, title: GOAL_CONFIG.hipertrofia.title, desc: GOAL_CONFIG.hipertrofia.desc },
+            { value: 'emagrecimento', icon: GOAL_CONFIG.emagrecimento.icon, title: GOAL_CONFIG.emagrecimento.title, desc: GOAL_CONFIG.emagrecimento.desc },
+            { value: 'condicionamento', icon: GOAL_CONFIG.condicionamento.icon, title: GOAL_CONFIG.condicionamento.title, desc: GOAL_CONFIG.condicionamento.desc }
+          ];
+
+          this.openOptionPickerModal({
+            title: 'Objetivo Principal',
+            subtitle: 'Qual é o seu maior foco de treinamento agora?',
+            options: goalOptionsList,
+            currentValue: currentVal,
+            onSelect: (selectedVal) => {
+              const chosen = GOAL_CONFIG[selectedVal];
+              if (chosen) {
+                modalContainer.querySelector('#ob-goal').value = selectedVal;
+                modalContainer.querySelector('#ob-goal-icon').innerHTML = chosen.icon;
+                modalContainer.querySelector('#ob-goal-title').textContent = chosen.title;
+                modalContainer.querySelector('#ob-goal-sub').textContent = chosen.sub;
+                this._tempOnboarding.goal = selectedVal;
+              }
+            }
+          });
+        });
+      }
+
+      const freqTrigger = modalContainer.querySelector('#ob-freq-trigger');
+      if (freqTrigger) {
+        freqTrigger.addEventListener('click', () => {
+          sound.playTapSound();
+          const currentVal = modalContainer.querySelector('#ob-frequency').value;
+          const freqOptionsList = [
+            { value: '3', icon: FREQ_CONFIG[3].icon, title: FREQ_CONFIG[3].title, desc: FREQ_CONFIG[3].desc },
+            { value: '4', icon: FREQ_CONFIG[4].icon, title: FREQ_CONFIG[4].title, desc: FREQ_CONFIG[4].desc },
+            { value: '5', icon: FREQ_CONFIG[5].icon, title: FREQ_CONFIG[5].title, desc: FREQ_CONFIG[5].desc }
+          ];
+
+          this.openOptionPickerModal({
+            title: 'Frequência Semanal',
+            subtitle: 'Quantos dias por semana você pretende treinar?',
+            options: freqOptionsList,
+            currentValue: currentVal,
+            onSelect: (selectedVal) => {
+              const chosen = FREQ_CONFIG[selectedVal];
+              if (chosen) {
+                modalContainer.querySelector('#ob-frequency').value = selectedVal;
+                modalContainer.querySelector('#ob-freq-icon').innerHTML = chosen.icon;
+                modalContainer.querySelector('#ob-freq-title').textContent = chosen.title;
+                modalContainer.querySelector('#ob-freq-sub').textContent = chosen.sub;
+                this._tempOnboarding.frequency = parseInt(selectedVal, 10);
+              }
+            }
+          });
+        });
+      }
+
+      modalContainer.querySelector('#onboarding-step2-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        sound.playTapSound();
+        this._tempOnboarding.goal = modalContainer.querySelector('#ob-goal').value || 'hipertrofia';
+        this._tempOnboarding.frequency = parseInt(modalContainer.querySelector('#ob-frequency').value, 10) || 4;
+        this.openAppleOnboarding(5);
+      });
+
+      return;
+    }
+
+    // ==========================================
+    // ETAPA 3 DE 3: CADASTRO DO USUÁRIO & ACESSO (stepIndex === 5)
+    // ==========================================
+    if (stepIndex === 5) {
+      modalContainer.innerHTML = `
+        <div class="onboarding-fullscreen-portal" id="onboarding-calibrate-portal">
+          <div class="onboarding-apple-container" style="text-align: left;">
+            <div class="onboarding-apple-nav" style="justify-content: space-between;">
+              <button type="button" class="onboarding-apple-skip" id="ob-btn-back" style="padding-left: 0; display: inline-flex; align-items: center; gap: 4px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                <span>Voltar</span>
+              </button>
+              <span class="onboarding-apple-badge">ETAPA 3 DE 3</span>
+            </div>
+
+            <div class="onboarding-wizard-progress">
+              <div class="onboarding-wizard-bar active"></div>
+              <div class="onboarding-wizard-bar active"></div>
+              <div class="onboarding-wizard-bar active"></div>
+            </div>
+
+            <div style="margin: 4px 0 14px;">
+              <h2 class="onboarding-apple-title" style="font-size: 1.6rem; text-align: left; margin: 0 0 6px;">
+                CRIE SUA CONTA
+              </h2>
+              <p class="onboarding-apple-desc" style="text-align: left; max-width: 100%; font-size: 0.84rem; margin: 0;">
+                Sincronize seu templo na nuvem para treinar no iPhone, Mac ou qualquer dispositivo com segurança.
+              </p>
+            </div>
+
+            <!-- Abas Criar Conta / Entrar -->
+            <div class="onboarding-auth-tabs">
+              <button type="button" id="ob-tab-signup" class="onboarding-auth-tab active">
+                CRIAR CONTA
+              </button>
+              <button type="button" id="ob-tab-login" class="onboarding-auth-tab">
+                JÁ TENHO CONTA (ENTRAR)
+              </button>
+            </div>
+
+            <form id="onboarding-auth-form" style="width: 100%;">
+              <div class="form-group" id="ob-group-name" style="margin-bottom: 12px;">
+                <label class="form-label">Nome</label>
+                <input type="text" class="form-input" id="ob-auth-name" value="${t.name || ''}" placeholder="Seu nome ou apelido" />
+              </div>
+
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label class="form-label">E-mail</label>
+                <input type="email" class="form-input" id="ob-auth-email" placeholder="seu-email@exemplo.com" required />
+              </div>
+
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label">Senha (mínimo 6 caracteres)</label>
+                <input type="password" class="form-input" id="ob-auth-password" placeholder="••••••••" minlength="6" required />
+              </div>
+
+              <div id="ob-auth-error" style="display: none; padding: 10px 12px; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35); border-radius: 8px; color: #fca5a5; font-size: 0.76rem; margin-bottom: 14px; line-height: 1.4;"></div>
+
+              <button type="submit" id="ob-btn-submit-auth" class="onboarding-apple-btn glow" style="width: 100%; background: #ffffff; color: #000000; font-weight: 800;">
+                <span>CRIAR CONTA & ENTRAR</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </form>
+
+            <!-- Card Destaque: Carregar Dados de Demonstração (Portfólio) -->
+            <div class="onboarding-demo-card">
+              <button type="button" class="onboarding-demo-action-btn" id="ob-btn-demo-mode">
+                <div class="demo-badge-pill">DEMO</div>
+                <div class="demo-card-body">
+                  <strong>Carregar Dados de Demonstração</strong>
+                  <span>Explore o templo com treinos, históricos e conquistas preenchidos</span>
+                </div>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+
+            <!-- Opção Local Offline Discreta -->
+            <div style="text-align: center; margin-top: 10px; width: 100%;">
+              <button type="button" id="ob-btn-offline-local" style="background: none; border: none; color: #94a3b8; font-size: 0.76rem; cursor: pointer; padding: 8px; text-decoration: underline;">
+                Continuar sem cadastro (Modo Offline Local)
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Handlers Step 3
+      modalContainer.querySelector('#ob-btn-back')?.addEventListener('click', () => {
+        sound.playTapSound();
+        this.openAppleOnboarding(4);
+      });
+
+      let authMode = 'signup';
+      const tabSignup = modalContainer.querySelector('#ob-tab-signup');
+      const tabLogin = modalContainer.querySelector('#ob-tab-login');
+      const groupName = modalContainer.querySelector('#ob-group-name');
+      const submitBtn = modalContainer.querySelector('#ob-btn-submit-auth');
+      const errorBox = modalContainer.querySelector('#ob-auth-error');
+
+      tabSignup.addEventListener('click', () => {
+        authMode = 'signup';
+        tabSignup.classList.add('active');
+        tabLogin.classList.remove('active');
+        groupName.style.display = 'block';
+        submitBtn.querySelector('span').textContent = 'CRIAR CONTA & ENTRAR';
+        errorBox.style.display = 'none';
+        sound.playTapSound();
+      });
+
+      tabLogin.addEventListener('click', () => {
+        authMode = 'login';
+        tabLogin.classList.add('active');
+        tabSignup.classList.remove('active');
+        groupName.style.display = 'none';
+        submitBtn.querySelector('span').textContent = 'ENTRAR NO TEMPLO';
+        errorBox.style.display = 'none';
+        sound.playTapSound();
+      });
+
+      // Ação: Dados de Demonstração
+      modalContainer.querySelector('#ob-btn-demo-mode')?.addEventListener('click', () => {
         StorageService.loadDemoData();
         this.profile = StorageService.getProfile();
         this.updateHeaderStreak();
@@ -4371,126 +4649,124 @@ class AgiteMeApp {
         sound.playVictoryFanfare();
         this.switchTab('templo');
       });
-    }
 
-    // Ação: Botão Anônimo (?)
-    const btnAnon = modalContainer.querySelector('#btn-set-anon');
-    const nameInput = modalContainer.querySelector('#ob-name');
-    if (btnAnon && nameInput) {
-      btnAnon.addEventListener('click', () => {
-        sound.playTapSound();
-        nameInput.value = '';
-        nameInput.placeholder = 'Entrando como Anônimo';
-        nameInput.focus();
+      // Ação: Modo Offline Local
+      modalContainer.querySelector('#ob-btn-offline-local')?.addEventListener('click', () => {
+        this.profile = {
+          ...this.profile,
+          name: this._tempOnboarding.name || this.profile.name || '',
+          weight: this._tempOnboarding.weight || 75,
+          height: this._tempOnboarding.height || 178,
+          age: this._tempOnboarding.age || 24,
+          goal: this._tempOnboarding.goal || 'hipertrofia',
+          frequency: this._tempOnboarding.frequency || 4,
+          isOnboarded: true
+        };
+        StorageService.saveProfile(this.profile);
+        modalContainer.innerHTML = '';
+        sound.playVictoryFanfare();
+        this.updateHeaderStreak();
+        this.updateHeaderAvatar();
+        this.renderCurrentTab();
       });
-    }
 
-    // Ação: Modal Bonitinho para Objetivo Principal
-    const goalTrigger = modalContainer.querySelector('#ob-goal-trigger');
-    if (goalTrigger) {
-      goalTrigger.addEventListener('click', () => {
-        sound.playTapSound();
-        const currentVal = modalContainer.querySelector('#ob-goal').value;
-        const goalOptionsList = [
-          { value: 'hipertrofia', icon: GOAL_CONFIG.hipertrofia.icon, title: GOAL_CONFIG.hipertrofia.title, desc: GOAL_CONFIG.hipertrofia.desc },
-          { value: 'emagrecimento', icon: GOAL_CONFIG.emagrecimento.icon, title: GOAL_CONFIG.emagrecimento.title, desc: GOAL_CONFIG.emagrecimento.desc },
-          { value: 'condicionamento', icon: GOAL_CONFIG.condicionamento.icon, title: GOAL_CONFIG.condicionamento.title, desc: GOAL_CONFIG.condicionamento.desc }
-        ];
-
-        this.openOptionPickerModal({
-          title: 'Objetivo Principal',
-          subtitle: 'Qual é o seu maior foco de treinamento agora?',
-          options: goalOptionsList,
-          currentValue: currentVal,
-          onSelect: (selectedVal) => {
-            const chosen = GOAL_CONFIG[selectedVal];
-            if (chosen) {
-              modalContainer.querySelector('#ob-goal').value = selectedVal;
-              modalContainer.querySelector('#ob-goal-icon').innerHTML = chosen.icon;
-              modalContainer.querySelector('#ob-goal-title').textContent = chosen.title;
-              modalContainer.querySelector('#ob-goal-sub').textContent = chosen.sub;
-            }
-          }
-        });
-      });
-    }
-
-    // Ação: Modal Bonitinho para Frequência Semanal
-    const freqTrigger = modalContainer.querySelector('#ob-freq-trigger');
-    if (freqTrigger) {
-      freqTrigger.addEventListener('click', () => {
-        sound.playTapSound();
-        const currentVal = modalContainer.querySelector('#ob-frequency').value;
-        const freqOptionsList = [
-          { value: '3', icon: FREQ_CONFIG[3].icon, title: FREQ_CONFIG[3].title, desc: FREQ_CONFIG[3].desc },
-          { value: '4', icon: FREQ_CONFIG[4].icon, title: FREQ_CONFIG[4].title, desc: FREQ_CONFIG[4].desc },
-          { value: '5', icon: FREQ_CONFIG[5].icon, title: FREQ_CONFIG[5].title, desc: FREQ_CONFIG[5].desc }
-        ];
-
-        this.openOptionPickerModal({
-          title: 'Frequência Semanal',
-          subtitle: 'Quantos dias por semana você pretende treinar?',
-          options: freqOptionsList,
-          currentValue: currentVal,
-          onSelect: (selectedVal) => {
-            const chosen = FREQ_CONFIG[selectedVal];
-            if (chosen) {
-              modalContainer.querySelector('#ob-frequency').value = selectedVal;
-              modalContainer.querySelector('#ob-freq-icon').innerHTML = chosen.icon;
-              modalContainer.querySelector('#ob-freq-title').textContent = chosen.title;
-              modalContainer.querySelector('#ob-freq-sub').textContent = chosen.sub;
-            }
-          }
-        });
-      });
-    }
-
-    // Steppers − / + para Métricas Físicas
-    modalContainer.querySelectorAll('.metric-btn-step').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      // Submissão do Formulário de Autenticação Supabase
+      modalContainer.querySelector('#onboarding-auth-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const targetId = btn.getAttribute('data-step-target');
-        const delta = parseInt(btn.getAttribute('data-delta'), 10) || 1;
-        const input = modalContainer.querySelector(`#${targetId}`);
-        if (input) {
-          let val = parseInt(input.value, 10);
-          if (isNaN(val)) val = 0;
-          const min = parseInt(input.getAttribute('min'), 10);
-          const max = parseInt(input.getAttribute('max'), 10);
-          val += delta;
-          if (!isNaN(min) && val < min) val = min;
-          if (!isNaN(max) && val > max) val = max;
-          input.value = val;
-          input.dispatchEvent(new Event('input', { bubbles: true }));
-          sound.playTapSound();
-          if ('vibrate' in navigator) navigator.vibrate(20);
+        const email = modalContainer.querySelector('#ob-auth-email').value.trim();
+        const password = modalContainer.querySelector('#ob-auth-password').value;
+        const name = (authMode === 'signup')
+          ? modalContainer.querySelector('#ob-auth-name').value.trim()
+          : (this._tempOnboarding.name || '');
+
+        submitBtn.disabled = true;
+        const origText = submitBtn.querySelector('span').textContent;
+        submitBtn.querySelector('span').textContent = 'Sincronizando com o templo...';
+        errorBox.style.display = 'none';
+
+        try {
+          if (authMode === 'signup') {
+            const res = await SupabaseService.signUp(email, password, {
+              name: name || 'Guerreiro',
+              auraColor: '#cbd5e1'
+            });
+
+            if (!res.success) {
+              errorBox.textContent = res.error || 'Erro ao criar conta no Supabase.';
+              errorBox.style.display = 'block';
+              submitBtn.disabled = false;
+              submitBtn.querySelector('span').textContent = origText;
+              return;
+            }
+
+            // Conta criada com sucesso! Atualiza perfil com as métricas do onboarding
+            this.profile = {
+              ...this.profile,
+              name: name || this._tempOnboarding.name || '',
+              email,
+              weight: this._tempOnboarding.weight || 75,
+              height: this._tempOnboarding.height || 178,
+              age: this._tempOnboarding.age || 24,
+              goal: this._tempOnboarding.goal || 'hipertrofia',
+              frequency: this._tempOnboarding.frequency || 4,
+              isOnboarded: true
+            };
+
+            StorageService.saveProfile(this.profile);
+
+            if (res.data?.user) {
+              this.supabaseUser = res.data.user;
+              await SupabaseService.saveProfile(this.supabaseUser.id, this.profile);
+            }
+
+            sound.playVictoryFanfare();
+            modalContainer.innerHTML = '';
+            this.updateHeaderStreak();
+            this.updateHeaderAvatar();
+            this.renderCurrentTab();
+
+            this.showCosmicModalAlert({
+              title: 'CONTA CRIADA',
+              message: 'Seu perfil foi criado e sincronizado com sucesso na nuvem do Templo!',
+              type: 'success'
+            });
+          } else {
+            // Modo Login
+            const res = await SupabaseService.signIn(email, password);
+            if (!res.success) {
+              errorBox.textContent = res.error || 'Credenciais inválidas. Verifique seu e-mail e senha.';
+              errorBox.style.display = 'block';
+              submitBtn.disabled = false;
+              submitBtn.querySelector('span').textContent = origText;
+              return;
+            }
+
+            this.supabaseUser = res.data.user;
+            this.profile.email = email;
+            this.profile.isOnboarded = true;
+
+            const cloudProfile = await SupabaseService.getProfile(this.supabaseUser.id);
+            if (cloudProfile) {
+              this.profile = { ...this.profile, ...cloudProfile, isOnboarded: true };
+            }
+
+            StorageService.saveProfile(this.profile);
+            sound.playVictoryFanfare();
+            modalContainer.innerHTML = '';
+            this.updateHeaderStreak();
+            this.updateHeaderAvatar();
+            this.renderCurrentTab();
+          }
+        } catch (err) {
+          errorBox.textContent = err.message || 'Erro inesperado na conexão.';
+          errorBox.style.display = 'block';
+          submitBtn.disabled = false;
+          submitBtn.querySelector('span').textContent = origText;
         }
       });
-    });
 
-    const form = modalContainer.querySelector('#onboarding-form');
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const enteredName = modalContainer.querySelector('#ob-name').value.trim();
-
-      this.profile = {
-        ...this.profile,
-        name: enteredName,
-        weight: parseFloat(modalContainer.querySelector('#ob-weight').value) || 75,
-        height: parseFloat(modalContainer.querySelector('#ob-height').value) || 178,
-        age: parseInt(modalContainer.querySelector('#ob-age').value, 10) || 24,
-        goal: modalContainer.querySelector('#ob-goal').value || 'hipertrofia',
-        frequency: parseInt(modalContainer.querySelector('#ob-frequency').value, 10) || 4,
-        isOnboarded: true
-      };
-
-      StorageService.saveProfile(this.profile);
-      modalContainer.innerHTML = '';
-      sound.playVictoryFanfare();
-      this.updateHeaderStreak();
-      this.updateHeaderAvatar();
-      this.renderCurrentTab();
-    });
+      return;
+    }
   }
 
   openExerciseModal(exercise) {

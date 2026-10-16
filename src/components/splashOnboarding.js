@@ -34,8 +34,8 @@ export const ONBOARDING_SVGS = {
     <ellipse cx="110" cy="110" rx="76" ry="24" transform="rotate(35 110 110)" stroke="#64748b" stroke-width="1.25" stroke-dasharray="5 3"/>
 
     <!-- Nós de Constelação Sutis -->
-    <circle cx="34" cy="74" r="3" fill="#38bdf8"/>
-    <circle cx="186" cy="146" r="3" fill="#f472b6"/>
+    <circle cx="34" cy="74" r="3" fill="#cbd5e1"/>
+    <circle cx="186" cy="146" r="3" fill="#94a3b8"/>
     <circle cx="158" cy="62" r="2.5" fill="#e2e8f0"/>
     <circle cx="70" cy="160" r="2" fill="#cbd5e1"/>
     
@@ -59,7 +59,7 @@ export const ONBOARDING_SVGS = {
     <line x1="67" y1="72" x2="67" y2="168" stroke="#475569" stroke-width="1.25"/>
     <!-- Capitel e Base -->
     <rect x="42" y="62" width="36" height="8" rx="2" stroke="#94a3b8" stroke-width="1.5" fill="#141824"/>
-    <polygon points="60,110 65,117 60,124 55,117" stroke="#38bdf8" stroke-width="1.25" fill="none"/>
+    <polygon points="60,110 65,117 60,124 55,117" stroke="#cbd5e1" stroke-width="1.25" fill="none"/>
 
     <!-- COLUNA CENTRAL (Constância / Mais Alta) -->
     <rect x="94" y="48" width="32" height="122" stroke="#cbd5e1" stroke-width="1.75" fill="#0f121a"/>
@@ -70,7 +70,7 @@ export const ONBOARDING_SVGS = {
     <rect x="88" y="38" width="44" height="10" rx="2" stroke="#e2e8f0" stroke-width="1.75" fill="#1a1f2e"/>
     <!-- Emblema Losango Central -->
     <polygon points="110,95 118,105 110,115 102,105" stroke="#ffffff" stroke-width="1.5" fill="#111625"/>
-    <circle cx="110" cy="105" r="2" fill="#38bdf8"/>
+    <circle cx="110" cy="105" r="2" fill="#ffffff"/>
 
     <!-- COLUNA DIREITA (Gamma) -->
     <rect x="146" y="70" width="28" height="100" stroke="#64748b" stroke-width="1.5" fill="#0c0e14"/>
@@ -79,15 +79,15 @@ export const ONBOARDING_SVGS = {
     <line x1="167" y1="72" x2="167" y2="168" stroke="#475569" stroke-width="1.25"/>
     <!-- Capitel e Base -->
     <rect x="142" y="62" width="36" height="8" rx="2" stroke="#94a3b8" stroke-width="1.5" fill="#141824"/>
-    <polygon points="160,110 165,117 160,124 155,117" stroke="#f472b6" stroke-width="1.25" fill="none"/>
+    <polygon points="160,110 165,117 160,124 155,117" stroke="#94a3b8" stroke-width="1.25" fill="none"/>
 
     <!-- Estrela / Centelha no topo do Pilar Central -->
     <path d="M110 16 L112 24 L120 26 L112 28 L110 36 L108 28 L100 26 L108 24 Z" fill="#ffffff"/>
-    <circle cx="110" cy="26" r="1.5" fill="#38bdf8"/>
+    <circle cx="110" cy="26" r="1.5" fill="#cbd5e1"/>
   </svg>
   `,
 
-  // Tela 3: Oráculo IA )
+  // Tela 3: Oráculo IA
   oraculo: `
   <svg width="220" height="220" viewBox="0 0 220 220" fill="none" xmlns="http://www.w3.org/2000/svg" class="ob-vector-art">
     <!-- Círculo de Proteção Cósmica -->
@@ -110,10 +110,10 @@ export const ONBOARDING_SVGS = {
     <circle cx="113" cy="107" r="3" fill="#ffffff"/> <!-- Brilho especular Apple -->
 
     <!-- Micro Pontos de Constelação -->
-    <circle cx="110" cy="24" r="3" fill="#38bdf8"/>
-    <circle cx="196" cy="110" r="3" fill="#f472b6"/>
-    <circle cx="110" cy="196" r="3" fill="#38bdf8"/>
-    <circle cx="24" cy="110" r="3" fill="#f472b6"/>
+    <circle cx="110" cy="24" r="3" fill="#ffffff"/>
+    <circle cx="196" cy="110" r="3" fill="#cbd5e1"/>
+    <circle cx="110" cy="196" r="3" fill="#94a3b8"/>
+    <circle cx="24" cy="110" r="3" fill="#e2e8f0"/>
   </svg>
   `
 };

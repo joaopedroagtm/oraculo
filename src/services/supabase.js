@@ -9,7 +9,7 @@ const SUPABASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VIT
 
 const SUPABASE_ANON_KEY = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY)
   ? import.meta.env.VITE_SUPABASE_ANON_KEY.trim()
-  : '';
+  : 'sb_publishable_YspjFgiBA4oBq7YkXl0kkA_XV6jKRN8';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
@@ -72,7 +72,7 @@ export const SupabaseService = {
         options: {
           data: {
             name: metadata.name || 'Guerreiro',
-            aura_color: metadata.auraColor || '#38bdf8'
+            aura_color: metadata.auraColor || '#cbd5e1'
           }
         }
       });
@@ -146,7 +146,7 @@ export const SupabaseService = {
         height: profileData.height,
         goal: profileData.goal,
         frequency: profileData.frequency,
-        aura_color: profileData.auraColor || '#38bdf8',
+        aura_color: profileData.auraColor || '#cbd5e1',
         avatar_url: profileData.avatarUrl || null,
         gemini_api_key: profileData.geminiApiKey || '',
         updated_at: new Date().toISOString()
