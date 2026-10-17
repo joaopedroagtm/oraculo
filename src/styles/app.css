@@ -10,9 +10,8 @@
 
 html, body {
   width: 100%;
-  height: 100%;
+  height: 100vh;
   height: 100dvh;
-  min-height: -webkit-fill-available;
   overflow: hidden;
   background-color: #000000;
   font-family: var(--font-sans);
@@ -49,9 +48,8 @@ html, body {
 #app {
   width: 100%;
   max-width: 450px;
-  height: 100%;
+  height: 100vh;
   height: 100dvh;
-  min-height: -webkit-fill-available;
   margin: 0 auto;
   position: relative;
   display: flex;
@@ -81,7 +79,7 @@ html, body {
   overflow-x: hidden;
   position: relative;
   z-index: 5;
-  padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(75px + env(safe-area-inset-bottom, 0px));
   -webkit-overflow-scrolling: touch;
 }
 
@@ -96,10 +94,10 @@ html, body {
 /* HEADER */
 .celestial-header {
   position: relative;
-  padding-top: calc(10px + env(safe-area-inset-top, 0px));
-  padding-left: calc(14px + env(safe-area-inset-left, 0px));
-  padding-right: calc(14px + env(safe-area-inset-right, 0px));
-  padding-bottom: 10px;
+  padding-top: max(calc(env(safe-area-inset-top, 0px) + 14px), 20px);
+  padding-left: max(calc(env(safe-area-inset-left, 0px) + 14px), 16px);
+  padding-right: max(calc(env(safe-area-inset-right, 0px) + 14px), 16px);
+  padding-bottom: 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -113,6 +111,13 @@ html, body {
   box-sizing: border-box;
   width: 100%;
   flex-shrink: 0;
+}
+
+@media (display-mode: standalone) {
+  .celestial-header {
+    /* No PWA no iPhone com Dynamic Island/Notch, dá o espaçamento exato para não invadir o blur da Status Bar */
+    padding-top: max(calc(env(safe-area-inset-top, 0px) + 16px), 58px);
+  }
 }
 
 .brand-wrapper {
@@ -521,7 +526,7 @@ html, body {
   flex-direction: column;
   transform: translateX(100%);
   transition: transform 0.32s cubic-bezier(0.175, 0.885, 0.32, 1);
-  padding: calc(18px + env(safe-area-inset-top, 0px)) 18px calc(18px + env(safe-area-inset-bottom, 0px));
+  padding: max(calc(18px + env(safe-area-inset-top, 0px)), 56px) 18px calc(18px + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
 }
 
@@ -2417,16 +2422,18 @@ html, body {
   bottom: 0;
   left: 0;
   right: 0;
-  height: calc(64px + env(safe-area-inset-bottom, 0px));
-  background: rgba(4, 5, 8, 0.88);
+  background: rgba(4, 5, 8, 0.92);
   backdrop-filter: blur(32px) saturate(190%);
   -webkit-backdrop-filter: blur(32px) saturate(190%);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  justify-content: space-around;
+  align-items: center;
   z-index: 50;
-  padding: 8px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+  padding-top: 6px;
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 10px);
+  padding-left: max(env(safe-area-inset-left, 0px), 6px);
+  padding-right: max(env(safe-area-inset-right, 0px), 6px);
   box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.85), inset 0 1px 1px rgba(255, 255, 255, 0.08);
   box-sizing: border-box;
 }
@@ -2448,7 +2455,7 @@ html, body {
   text-transform: uppercase;
   cursor: pointer;
   transition: all 0.2s ease;
-  padding: 6px 2px;
+  padding: 4px 2px;
   border-radius: 8px;
   white-space: nowrap;
 }
