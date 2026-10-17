@@ -210,16 +210,19 @@ class AgiteMeApp {
     this.initSupabaseAuth();
     this.updateHeaderStreak();
 
-    // Exibe Splash Screen
+    if (!this.profile.isOnboarded) {
+
+      this.openAppleOnboarding(0);
+    } else {
+      this.renderCurrentTab();
+    }
+
+    // Exibe Splash Screen fluida
     SplashService.show({
       onFinish: () => {
-        if (!this.profile.isOnboarded) {
-          this.openAppleOnboarding(0);
-        }
+        // Splash finalizada
       }
     });
-
-    this.renderCurrentTab();
   }
 
   setupStopwatch() {
@@ -461,9 +464,12 @@ class AgiteMeApp {
             weight: remoteProfile.weight || this.profile.weight,
             height: remoteProfile.height || this.profile.height,
             goal: remoteProfile.goal || this.profile.goal,
-            auraColor: remoteProfile.aura_color || this.profile.auraColor,
-            avatarUrl: remoteProfile.avatar_url || this.profile.avatarUrl,
-            geminiApiKey: remoteProfile.gemini_api_key || this.profile.geminiApiKey
+            frequency: remoteProfile.frequency || this.profile.frequency,
+            auraColor: remoteProfile.aura_color || remoteProfile.auraColor || this.profile.auraColor,
+            avatarUrl: remoteProfile.avatar_url || remoteProfile.avatarUrl || this.profile.avatarUrl,
+            geminiApiKey: remoteProfile.gemini_api_key || remoteProfile.geminiApiKey || this.profile.geminiApiKey,
+            hasConfiguredBio: Boolean((remoteProfile.weight && remoteProfile.height) || this.profile.hasConfiguredBio),
+            isOnboarded: true
           };
           StorageService.saveProfile(this.profile);
         }
@@ -651,13 +657,13 @@ class AgiteMeApp {
     const p = this.profile || StorageService.getProfile();
     const stats = StorageService.getStats();
     const history = StorageService.getHistory();
-    const isBioConfigured = Boolean(p.hasConfiguredBio);
-    const weightDisplay = (isBioConfigured && p.weight) ? `${p.weight} kg` : '-- kg';
-    const heightDisplay = (isBioConfigured && p.height) ? `${p.height} cm` : '-- cm';
-    const imc = (isBioConfigured && p.weight && p.height) ? (p.weight / ((p.height / 100) * (p.height / 100))).toFixed(1) : '--';
-    const goalFreqText = (isBioConfigured && p.goal)
+    const isBioConfigured = Boolean(p.hasConfiguredBio || (p.weight && p.height));
+    const weightDisplay = p.weight ? `${p.weight} kg` : '-- kg';
+    const heightDisplay = p.height ? `${p.height} cm` : '-- cm';
+    const imc = (p.weight && p.height) ? (p.weight / ((p.height / 100) * (p.height / 100))).toFixed(1) : '--';
+    const goalFreqText = p.goal
       ? `${p.goal.toUpperCase()} • ${p.frequency || 4}x / SEMANA`
-      : 'Métricas pendentes';
+      : ((p.weight || p.height) ? `${p.frequency || 4}x / SEMANA` : 'Métricas pendentes');
 
     // Cálculo de Patente Cósmica / Gamificação
     let rankLevel = 1;
@@ -731,6 +737,18 @@ class AgiteMeApp {
         unlocked: stats.totalWorkouts >= 1
       },
       {
+        id: 'communion',
+        iconSVG: `
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>
+            <circle cx="12" cy="12" r="3" fill="rgba(192,132,252,0.35)"/>
+          </svg>
+        `,
+        title: 'Comunhão',
+        desc: 'Consultou a sabedoria do Oráculo',
+        unlocked: (StorageService.getChatHistory().length > 1 || StorageService.getChatSessions().length > 0)
+      },
+      {
         id: 'streak-flame',
         iconSVG: `
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -757,18 +775,6 @@ class AgiteMeApp {
         title: 'Força de Titã',
         desc: 'Ergueu 5+ toneladas em carga',
         unlocked: stats.totalVolumeKg >= 5000
-      },
-      {
-        id: 'communion',
-        iconSVG: `
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>
-            <circle cx="12" cy="12" r="3" fill="rgba(192,132,252,0.35)"/>
-          </svg>
-        `,
-        title: 'Comunhão',
-        desc: 'Consultou a sabedoria do Oráculo',
-        unlocked: (StorageService.getChatHistory().length > 1 || StorageService.getChatSessions().length > 0)
       }
     ];
 
@@ -1268,8 +1274,10 @@ class AgiteMeApp {
         const userRoutines = StorageService.getRoutines();
         const picked = userRoutines.find(r => r.id === rId);
         if (picked) {
-          this.startWorkoutSession(picked);
-          this.renderTreinoView(container);
+          this.triggerWorkoutCountdown(picked, () => {
+            this.startWorkoutSession(picked);
+            this.renderTreinoView(container);
+          });
         }
       };
 
@@ -1876,6 +1884,100 @@ class AgiteMeApp {
         contentEl.querySelector('#btn-err-close').addEventListener('click', close);
       }
     });
+  }
+
+  // Animação Cósmica Full-Screen: Contagem Regressiva 3, 2, 1, VAI!
+  triggerWorkoutCountdown(routine, onComplete) {
+    // Remove qualquer overlay anterior de contagem
+    document.querySelectorAll('#workout-countdown-overlay').forEach(el => el.remove());
+
+    const overlay = document.createElement('div');
+    overlay.className = 'workout-countdown-overlay';
+    overlay.id = 'workout-countdown-overlay';
+
+    overlay.innerHTML = `
+      <div class="countdown-backdrop-glow"></div>
+      
+      <div class="countdown-portal-info">
+        <span class="countdown-portal-badge">${routine.code || 'PORTAL'}</span>
+        <h2 class="countdown-portal-title">${routine.title || 'Iniciando Treino'}</h2>
+        <p class="countdown-portal-focus">${routine.focus || 'Foco muscular calibrado'}</p>
+      </div>
+
+      <div class="countdown-number-container">
+        <div class="countdown-pulse-ring"></div>
+        <div class="countdown-current-digit pop-anim" id="countdown-digit">3</div>
+      </div>
+
+      <div class="countdown-footer-action">
+        <button type="button" class="countdown-skip-btn" id="countdown-skip-btn">
+          <span>PULAR CONTAGEM</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    let currentStep = 3;
+    let timerId = null;
+    let hasFinished = false;
+
+    const finish = () => {
+      if (hasFinished) return;
+      hasFinished = true;
+      if (timerId) clearInterval(timerId);
+      overlay.classList.add('fade-out');
+      setTimeout(() => {
+        overlay.remove();
+        if (typeof onComplete === 'function') onComplete();
+      }, 250);
+    };
+
+    overlay.querySelector('#countdown-skip-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sound.playTapSound();
+      finish();
+    });
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target.closest('#countdown-skip-btn')) return;
+      sound.playTapSound();
+      finish();
+    });
+
+    const digitEl = overlay.querySelector('#countdown-digit');
+
+    // 1º toque imediato ao surgir: 3
+    sound.playCountdownBeep();
+    if ('vibrate' in navigator) navigator.vibrate(40);
+
+    timerId = setInterval(() => {
+      currentStep--;
+      if (currentStep > 0) {
+        if (digitEl) {
+          digitEl.textContent = currentStep;
+          digitEl.classList.remove('pop-anim');
+          void digitEl.offsetWidth; // Dispara reflow para animar suave
+          digitEl.classList.add('pop-anim');
+        }
+        sound.playCountdownBeep();
+        if ('vibrate' in navigator) navigator.vibrate(40);
+      } else if (currentStep === 0) {
+        if (digitEl) {
+          digitEl.textContent = 'VAI!';
+          digitEl.classList.add('go-state');
+          digitEl.classList.remove('pop-anim');
+          void digitEl.offsetWidth;
+          digitEl.classList.add('pop-anim');
+        }
+        sound.playRestFinishedAlert();
+        if ('vibrate' in navigator) navigator.vibrate([60, 40, 100]);
+        setTimeout(() => {
+          finish();
+        }, 550);
+      }
+    }, 1000);
   }
 
   startWorkoutSession(routine) {
@@ -3286,7 +3388,7 @@ class AgiteMeApp {
               </div>
               <div>
                 <h3 style="font-family: var(--font-carved); font-size: 1.05rem; color: #fff; margin: 0;">
-                  EDITAR PERFIL DO GUERREIRO
+                  EDITAR PERFIL
                 </h3>
                 <small style="color: var(--neon-cyan); font-size: 0.68rem;">Personalize suas métricas, foto e aura do templo</small>
               </div>
@@ -3964,8 +4066,12 @@ class AgiteMeApp {
               weight: remoteProfile.weight || this.profile.weight,
               height: remoteProfile.height || this.profile.height,
               goal: remoteProfile.goal || this.profile.goal,
-              auraColor: remoteProfile.aura_color || this.profile.auraColor,
-              avatarUrl: remoteProfile.avatar_url || this.profile.avatarUrl
+              frequency: remoteProfile.frequency || this.profile.frequency,
+              auraColor: remoteProfile.aura_color || remoteProfile.auraColor || this.profile.auraColor,
+              avatarUrl: remoteProfile.avatar_url || remoteProfile.avatarUrl || this.profile.avatarUrl,
+              geminiApiKey: remoteProfile.gemini_api_key || remoteProfile.geminiApiKey || this.profile.geminiApiKey,
+              hasConfiguredBio: Boolean((remoteProfile.weight && remoteProfile.height) || this.profile.hasConfiguredBio),
+              isOnboarded: true
             };
           } else {
             // Sincroniza perfil local no Supabase
@@ -4243,10 +4349,6 @@ class AgiteMeApp {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                   </div>
                   <input type="text" class="form-input field-input-with-icon" id="ob-name" value="${t.name || ''}" placeholder="Seu nome ou apelido (ex: Marco)" />
-                  <button type="button" class="btn-anonymous-badge" id="btn-set-anon" title="Entrar sem nome">
-                    <span style="font-weight: 700;">?</span>
-                    <span>Anônimo</span>
-                  </button>
                 </div>
                 <div class="form-field-helper">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
@@ -4313,17 +4415,6 @@ class AgiteMeApp {
         sound.playTapSound();
         this.openAppleOnboarding(2);
       });
-
-      const btnAnon = modalContainer.querySelector('#btn-set-anon');
-      const nameInput = modalContainer.querySelector('#ob-name');
-      if (btnAnon && nameInput) {
-        btnAnon.addEventListener('click', () => {
-          sound.playTapSound();
-          nameInput.value = '';
-          nameInput.placeholder = 'Entrando como Anônimo';
-          nameInput.focus();
-        });
-      }
 
       modalContainer.querySelectorAll('.metric-btn-step').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -4660,6 +4751,7 @@ class AgiteMeApp {
           age: this._tempOnboarding.age || 24,
           goal: this._tempOnboarding.goal || 'hipertrofia',
           frequency: this._tempOnboarding.frequency || 4,
+          hasConfiguredBio: true,
           isOnboarded: true
         };
         StorageService.saveProfile(this.profile);
@@ -4709,6 +4801,7 @@ class AgiteMeApp {
               age: this._tempOnboarding.age || 24,
               goal: this._tempOnboarding.goal || 'hipertrofia',
               frequency: this._tempOnboarding.frequency || 4,
+              hasConfiguredBio: true,
               isOnboarded: true
             };
 
@@ -4747,7 +4840,32 @@ class AgiteMeApp {
 
             const cloudProfile = await SupabaseService.getProfile(this.supabaseUser.id);
             if (cloudProfile) {
-              this.profile = { ...this.profile, ...cloudProfile, isOnboarded: true };
+              this.profile = {
+                ...this.profile,
+                name: cloudProfile.name || this.profile.name,
+                age: cloudProfile.age || this.profile.age,
+                weight: cloudProfile.weight || this.profile.weight,
+                height: cloudProfile.height || this.profile.height,
+                goal: cloudProfile.goal || this.profile.goal,
+                frequency: cloudProfile.frequency || this.profile.frequency,
+                auraColor: cloudProfile.aura_color || cloudProfile.auraColor || this.profile.auraColor,
+                avatarUrl: cloudProfile.avatar_url || cloudProfile.avatarUrl || this.profile.avatarUrl,
+                geminiApiKey: cloudProfile.gemini_api_key || cloudProfile.geminiApiKey || this.profile.geminiApiKey,
+                hasConfiguredBio: Boolean((cloudProfile.weight && cloudProfile.height) || this.profile.hasConfiguredBio),
+                isOnboarded: true
+              };
+            }
+
+            // Sincroniza histórico de treinos do Supabase se houver
+            try {
+              const remoteWorkouts = await SupabaseService.getWorkouts(this.supabaseUser.id);
+              if (remoteWorkouts && remoteWorkouts.length > 0) {
+                const localHistory = StorageService.getHistory();
+                const merged = [...remoteWorkouts, ...localHistory.filter(l => !remoteWorkouts.some(r => r.id === l.id))];
+                StorageService.saveHistory(merged);
+              }
+            } catch (wErr) {
+              console.warn('Erro ao carregar treinos remotos:', wErr);
             }
 
             StorageService.saveProfile(this.profile);

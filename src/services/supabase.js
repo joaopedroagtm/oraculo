@@ -9,7 +9,7 @@ const SUPABASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VIT
 
 const SUPABASE_ANON_KEY = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY)
   ? import.meta.env.VITE_SUPABASE_ANON_KEY.trim()
-  : 'sb_publishable_YspjFgiBA4oBq7YkXl0kkA_XV6jKRN8';
+  : 'sb_publishable_YspjFgiBA4oBq7YkX1OkkA_XV6jKRN8';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
@@ -128,7 +128,13 @@ export const SupabaseService = {
         .single();
 
       if (error) throw error;
-      return data;
+      if (!data) return null;
+      return {
+        ...data,
+        avatarUrl: data.avatar_url || '',
+        auraColor: data.aura_color || '#cbd5e1',
+        geminiApiKey: data.gemini_api_key || ''
+      };
     } catch (err) {
       console.warn('Erro ao carregar perfil do Supabase:', err);
       return null;
