@@ -1888,6 +1888,15 @@ class AgiteMeApp {
 
   // Animação Cósmica Full-Screen: Contagem Regressiva 3, 2, 1, VAI!
   triggerWorkoutCountdown(routine, onComplete) {
+    // Desfoca qualquer elemento ativo para evitar retenção de foco no mobile
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
+    // Remove qualquer seleção de texto prévia no iOS Safari
+    if (window.getSelection) {
+      try { window.getSelection()?.removeAllRanges(); } catch {}
+    }
+
     // Remove qualquer overlay anterior de contagem
     document.querySelectorAll('#workout-countdown-overlay').forEach(el => el.remove());
 
@@ -1933,6 +1942,8 @@ class AgiteMeApp {
         if (typeof onComplete === 'function') onComplete();
       }, 250);
     };
+
+    overlay.addEventListener('contextmenu', (e) => e.preventDefault());
 
     overlay.querySelector('#countdown-skip-btn')?.addEventListener('click', (e) => {
       e.stopPropagation();
