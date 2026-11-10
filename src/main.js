@@ -1349,39 +1349,53 @@ class AgiteMeApp {
       const displayName = item.exerciseName || exData.name;
       const displayEquip = item.exerciseEquipment || exData.equipment;
       const allSetsDone = item.setsData.every(s => s.completed);
+      const previewThumb = exData.frames && exData.frames[0] ? exData.frames[0] : '';
 
       return `
             <div class="exercise-card ${allSetsDone ? 'completed' : ''}" id="exercise-card-${exIndex}">
               <div class="exercise-card-header">
-                <div class="exercise-title-row">
-                  <h3 class="exercise-name">${displayName}</h3>
-                  <div class="exercise-header-actions">
-                    <button class="btn-exercise-guide" data-view-exercise="${item.exerciseId}">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                      </svg>
-                      Como Fazer
+                <div class="exercise-card-top-row">
+                  ${previewThumb ? `
+                    <button type="button" class="exercise-card-thumb-btn" data-view-exercise="${item.exerciseId}" title="Ver execução de ${displayName}">
+                      <img src="${previewThumb}" alt="${displayName}" loading="lazy" />
+                      <span class="exercise-thumb-play-badge">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                          <polygon points="6 4 20 12 6 20 6 4"/>
+                        </svg>
+                      </span>
                     </button>
-                    <button class="btn-oracle-swap" data-swap-exercise="${exIndex}">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="9"/>
-                        <path d="m9 12 2 2 4-4"/>
-                      </svg>
-                      Trocar com IA
-                    </button>
+                  ` : ''}
+                  <div class="exercise-card-title-block">
+                    <h3 class="exercise-name">${displayName}</h3>
+                    <div class="exercise-sub-row">
+                      <span class="muscle-tag" style="display: inline-flex; align-items: center; gap: 4px;">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="12" r="10"/>
+                          <circle cx="12" cy="12" r="6"/>
+                          <circle cx="12" cy="12" r="2"/>
+                        </svg>
+                        ${exData.muscleLabel}
+                      </span>
+                      <span class="equip-tag">${displayEquip}</span>
+                    </div>
                   </div>
                 </div>
-                <div class="exercise-sub-row">
-                  <span class="muscle-tag" style="display: inline-flex; align-items: center; gap: 4px;">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="12" cy="12" r="10"/>
-                      <circle cx="12" cy="12" r="6"/>
-                      <circle cx="12" cy="12" r="2"/>
+                <div class="exercise-header-actions">
+                  <button class="btn-exercise-guide" data-view-exercise="${item.exerciseId}">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="5 3 19 12 5 21 5 3"/>
                     </svg>
-                    ${exData.muscleLabel}
-                  </span>
-                  <span class="equip-tag"> ${displayEquip}</span>
+                    Ver Execução
+                  </button>
+                  <button class="btn-oracle-swap" data-swap-exercise="${exIndex}">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M16 3h5v5"/>
+                      <path d="M8 21H3v-5"/>
+                      <path d="M21 3l-7 7"/>
+                      <path d="M3 21l7-7"/>
+                    </svg>
+                    Trocar com IA
+                  </button>
                 </div>
               </div>
 
@@ -4901,150 +4915,158 @@ class AgiteMeApp {
   openExerciseModal(exercise) {
     const modalContainer = document.querySelector('#modal-container');
     const frames = exercise.frames || [];
+    const frame0 = frames[0] || '';
+    const frame1 = frames[1] || frames[0] || '';
     let currentFrameIdx = 0;
     let isPlaying = true;
-    let loopTimer = null;
 
     modalContainer.innerHTML = `
       <div class="modal-overlay" id="exercise-guide-modal-overlay">
-        <div class="modal-sheet">
+        <div class="modal-sheet exercise-exec-modal-sheet">
           <div class="modal-handle-bar"></div>
           
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-            <div>
-              <span class="portal-code" style="font-size: 0.65rem;">${exercise.difficulty.toUpperCase()}</span>
-              <h2 style="font-family: var(--font-carved); font-size: 1.25rem; color: #fff; margin-top: 4px;">${exercise.name}</h2>
-              <div style="font-size: 0.75rem; color: var(--neon-cyan);">${exercise.targetGroup}</div>
+          <div class="exercise-modal-header">
+            <div class="exercise-modal-meta">
+              <div class="exercise-modal-badges">
+                <span class="portal-code">${(exercise.difficulty || 'Iniciante').toUpperCase()}</span>
+                ${exercise.equipment ? `<span class="exercise-modal-equip-badge">${exercise.equipment}</span>` : ''}
+              </div>
+              <h2 class="exercise-modal-title">${exercise.name}</h2>
+              <div class="exercise-modal-target">${exercise.targetGroup}</div>
             </div>
-            <button id="btn-close-ex-modal" style="background: none; border: none; color: var(--concrete-400); font-size: 1.6rem; cursor: pointer;">&times;</button>
+            <button id="btn-close-ex-modal" class="exercise-modal-close-btn" aria-label="Fechar">&times;</button>
           </div>
 
-          <!-- Palco de Demonstração Real Dinâmica (Start ↔ Contração Máxima) -->
-          <div class="exercise-real-player-stage">
-            <img id="modal-frame-img" class="real-frame-img" src="${frames[0]}" alt="${exercise.name}" />
-            
-            <div class="exercise-phase-pill-overlay" id="modal-phase-badge">
-              <span class="phase-dot-live" id="modal-phase-dot"></span>
-              <span id="modal-phase-label">Fase 1: Posição Inicial</span>
+          <!-- Card Unificado de Demonstração (Imagem 100% Livre + Deck Inferior) -->
+          <div class="exercise-player-card">
+            <div class="exercise-real-player-stage" id="exercise-stage-viewport" title="Toque na imagem para alternar entre as fases">
+              <!-- Fundo ambiente desfocado para preencher bordas sem cortar o movimento -->
+              <img id="modal-frame-ambient" class="real-frame-ambient-bg" src="${frame0}" alt="" aria-hidden="true" />
+
+              <!-- Duplo buffer de imagens pré-carregadas para transição GIF suave e sem piscar -->
+              <img id="modal-frame-img-0" class="real-frame-img is-visible" src="${frame0}" alt="${exercise.name} - Fase 1" />
+              <img id="modal-frame-img-1" class="real-frame-img" src="${frame1}" alt="${exercise.name} - Fase 2" />
+
+              <!-- Indicador discreto no canto superior sem cobrir o atleta -->
+              <div class="exercise-phase-pill-overlay" id="modal-phase-badge">
+                <span class="phase-dot-live" id="modal-phase-dot"></span>
+                <span id="modal-phase-label">Fase 1 • Posição Inicial</span>
+              </div>
             </div>
 
-            <div class="exercise-motion-speed-pill">
-              <span class="motion-pulse-ring"></span>
-              <span>1.3s Ritmo</span>
-            </div>
-
-            <!-- Micro-timeline de Ritmo do Ciclo -->
+            <!-- Barra de Progresso do Ciclo (Fora da imagem) -->
             <div class="player-timeline-track">
               <div class="player-timeline-fill" id="player-timeline-fill"></div>
             </div>
 
+            <!-- Deck de Controles (100% fora da área da foto) -->
             <div class="exercise-frame-controls">
               <div class="frame-step-tabs">
-                <button class="frame-step-btn active" id="btn-frame-0">
+                <button type="button" class="frame-step-btn active" id="btn-frame-0">
                   <span class="phase-badge-num">1</span>
-                  <span>Início</span>
+                  <span>Posição Inicial</span>
                 </button>
-                <button class="frame-step-btn" id="btn-frame-1">
+                <button type="button" class="frame-step-btn" id="btn-frame-1">
                   <span class="phase-badge-num">2</span>
-                  <span>Pico Contração</span>
+                  <span>Contração</span>
                 </button>
               </div>
-              <button class="frame-play-pause-btn is-looping" id="btn-frame-toggle-play">
+              <button type="button" class="frame-play-pause-btn is-looping" id="btn-frame-toggle-play" title="Pausar ou continuar animação">
                 <span class="loop-icon-glyph" id="play-pause-icon">⟳</span>
-                <span id="play-pause-text">Loop Ativo</span>
+                <span id="play-pause-text">GIF</span>
               </button>
+            </div>
+
+            <!-- Dica Biomecânica Dinâmica da Fase Atual -->
+            <div class="exercise-live-coach-bar" id="modal-coach-cue-box">
+              <span class="coach-cue-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 5v14M18 5v14M2 9v6M22 9v6M6 12h12"></path>
+                </svg>
+              </span>
+              <span class="coach-cue-text" id="modal-live-cue-text">
+                <strong>Fase 1 (Alongamento):</strong> Inspire fundo, estabilize a postura e prepare a musculatura sob tensão controlada.
+              </span>
             </div>
           </div>
 
-          <!-- Dica Biomecânica Dinâmica da Fase Atual -->
-          <div class="exercise-live-coach-bar" id="modal-coach-cue-box">
-            <span class="coach-cue-icon" style="display: flex; align-items: center; justify-content: center;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 6px rgba(56,189,248,0.6));">
-                <path d="M6 5v14M18 5v14M2 9v6M22 9v6M6 12h12"></path>
+          <!-- Passo a Passo de Execução Numerado -->
+          <div class="exercise-guide-section">
+            <h4 class="exercise-guide-section-title">
+              COMO EXECUTAR CORRETAMENTE
+            </h4>
+            <div class="exercise-steps-list">
+              ${exercise.steps.map((st, i) => `
+                <div class="exercise-step-card">
+                  <span class="exercise-step-num">${i + 1}</span>
+                  <span class="exercise-step-text">${st}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Dica de Ouro -->
+          <div class="exercise-insight-card gold-tip-card">
+            <div class="exercise-insight-header">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 18h6"/>
+                <path d="M10 22h4"/>
+                <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>
               </svg>
-            </span>
-            <span class="coach-cue-text" id="modal-live-cue-text">
-              Fase 1: Posição inicial estável. Mantenha as articulações alinhadas e respire preparando a carga.
-            </span>
+              <span>DICA DE OURO</span>
+            </div>
+            <div class="exercise-insight-body">
+              “${exercise.goldTip}”
+            </div>
+          </div>
+
+          <!-- Erros Comuns a Evitar -->
+          <div class="exercise-insight-card mistakes-card">
+            <div class="exercise-insight-header">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span>EVITE ESTES ERROS</span>
+            </div>
+            <ul class="exercise-mistakes-list">
+              ${exercise.mistakes.map(m => `
+                <li>${m}</li>
+              `).join('')}
+            </ul>
           </div>
 
           <!-- Links Externos de Alta Autoridade (MuscleWiki & YouTube) -->
           <div class="exercise-external-actions">
             <a href="${exercise.muscleWikiUrl}" target="_blank" rel="noopener noreferrer" class="ext-guide-btn musclewiki-btn">
-              <span class="ext-btn-icon" style="display: flex; align-items: center; justify-content: center;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <span class="ext-btn-icon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="10"/>
                   <line x1="2" y1="12" x2="22" y2="12"/>
                   <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
                 </svg>
               </span>
               <div class="ext-btn-texts">
-                <strong>MuscleWiki Oficial</strong>
-                <small>Guia 3D & Biomecânica ↗</small>
+                <strong>MuscleWiki 3D</strong>
+                <small>Anatomia & Guia ↗</small>
               </div>
             </a>
             <a href="${exercise.youtubeUrl}" target="_blank" rel="noopener noreferrer" class="ext-guide-btn youtube-btn">
-              <span class="ext-btn-icon" style="display: flex; align-items: center; justify-content: center;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <span class="ext-btn-icon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polygon points="5 3 19 12 5 21 5 3"/>
                 </svg>
               </span>
               <div class="ext-btn-texts">
                 <strong>Vídeo no YouTube</strong>
-                <small>Tutorial passo a passo ↗</small>
+                <small>Execução em vídeo ↗</small>
               </div>
             </a>
           </div>
 
-          <!-- Passo a Passo de Execução -->
-          <div style="margin-bottom: 18px;">
-            <h4 style="font-family: var(--font-hud); font-size: 0.78rem; color: var(--concrete-300); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px;">
-              COMO EXECUTAR CORRETAMENTE:
-            </h4>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-              ${exercise.steps.map((st, i) => `
-                <div style="display: flex; gap: 8px; font-size: 0.82rem; color: var(--concrete-200);">
-                  <span style="font-family: var(--font-hud); color: var(--neon-cyan); font-weight: 700;">${i + 1}.</span>
-                  <span>${st}</span>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-
-          <!-- Erros Comuns a Evitar -->
-          <div style="margin-bottom: 18px; background: rgba(255,42,133,0.08); border: 1px solid rgba(255,42,133,0.25); padding: 12px; border-radius: 10px;">
-            <h4 style="font-family: var(--font-hud); font-size: 0.75rem; color: var(--neon-pink); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                <line x1="12" y1="9" x2="12" y2="13"/>
-                <line x1="12" y1="17" x2="12.01" y2="17"/>
-              </svg>
-              ERROS COMUNS DE INICIANTES:
-            </h4>
-            <ul style="list-style-type: none; display: flex; flex-direction: column; gap: 4px;">
-              ${exercise.mistakes.map(m => `
-                <li style="font-size: 0.78rem; color: var(--concrete-300);">• ${m}</li>
-              `).join('')}
-            </ul>
-          </div>
-
-          <!-- Dica de Ouro -->
-          <div style="background: rgba(0,240,255,0.08); border: 1px solid rgba(0,240,255,0.25); padding: 12px; border-radius: 10px; margin-bottom: 20px;">
-            <div style="font-family: var(--font-hud); font-size: 0.75rem; color: var(--neon-cyan); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 18h6"/>
-                <path d="M10 22h4"/>
-                <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>
-              </svg>
-              DICA DE OURO:
-            </div>
-            <div style="font-size: 0.82rem; color: #fff; font-style: italic;">
-              ${exercise.goldTip}
-            </div>
-          </div>
-
-          <button id="btn-done-ex-modal" class="btn-enter-temple" style="padding: 12px;">
-            ENTENDIDO
+          <button id="btn-done-ex-modal" class="btn-enter-temple" style="padding: 13px;">
+            VOLTAR AO TREINO
           </button>
         </div>
       </div>
@@ -5052,10 +5074,13 @@ class AgiteMeApp {
 
     let progressTimer = null;
     let cycleProgress = 0;
-    const CYCLE_DURATION = 1300; // ms por fase
+    const CYCLE_DURATION = 1350; // ms por fase
     const TICK_INTERVAL = 40; // ms
 
-    const frameImg = modalContainer.querySelector('#modal-frame-img');
+    const stageViewport = modalContainer.querySelector('#exercise-stage-viewport');
+    const frameImg0 = modalContainer.querySelector('#modal-frame-img-0');
+    const frameImg1 = modalContainer.querySelector('#modal-frame-img-1');
+    const frameAmbient = modalContainer.querySelector('#modal-frame-ambient');
     const phaseLabel = modalContainer.querySelector('#modal-phase-label');
     const phaseBadge = modalContainer.querySelector('#modal-phase-badge');
     const phaseDot = modalContainer.querySelector('#modal-phase-dot');
@@ -5068,43 +5093,41 @@ class AgiteMeApp {
     const textPlay = modalContainer.querySelector('#play-pause-text');
 
     const cues = [
-      'Fase 1 (Alongamento): Inspire fundo, estabilize a postura e prepare a musculatura sob tensão controlada.',
-      'Fase 2 (Contração Máxima): Expire soltando o ar, esmague o músculo alvo no ápice por 1s e controle a descida!'
+      '<strong>Fase 1 (Alongamento):</strong> Inspire fundo, estabilize a postura e prepare a musculatura sob tensão controlada.',
+      '<strong>Fase 2 (Contração Máxima):</strong> Expire soltando o ar, contraia o músculo alvo no ápice por 1s e controle o retorno.'
     ];
 
     const setFrame = (idx) => {
       if (!frames[idx]) return;
       currentFrameIdx = idx;
-      frameImg.style.opacity = '0.75';
-      setTimeout(() => {
-        frameImg.src = frames[idx];
-        frameImg.style.opacity = '1';
-      }, 70);
 
-      phaseLabel.textContent = idx === 0
-        ? 'Fase 1: Posição Inicial'
-        : 'Fase 2: Pico Contração';
+      if (frameImg0 && frameImg1) {
+        frameImg0.classList.toggle('is-visible', idx === 0);
+        frameImg1.classList.toggle('is-visible', idx === 1);
+      }
+      if (frameAmbient) {
+        frameAmbient.src = frames[idx];
+      }
+
+      if (phaseLabel) {
+        phaseLabel.textContent = idx === 0
+          ? 'Fase 1 • Posição Inicial'
+          : 'Fase 2 • Pico de Contração';
+      }
 
       if (coachCueText) {
-        coachCueText.textContent = cues[idx];
+        coachCueText.innerHTML = cues[idx];
       }
 
       btnFrame0.classList.toggle('active', idx === 0);
       btnFrame1.classList.toggle('active', idx === 1);
       btnFrame1.classList.toggle('phase-1-active', idx === 1);
 
-      if (idx === 0) {
-        if (phaseDot) {
-          phaseDot.style.background = 'var(--neon-cyan)';
-          phaseDot.style.boxShadow = '0 0 8px var(--neon-cyan)';
-        }
-        if (phaseBadge) phaseBadge.style.borderColor = 'rgba(56, 189, 248, 0.55)';
-      } else {
-        if (phaseDot) {
-          phaseDot.style.background = 'var(--baby-pink)';
-          phaseDot.style.boxShadow = '0 0 8px var(--baby-pink)';
-        }
-        if (phaseBadge) phaseBadge.style.borderColor = 'rgba(244, 114, 182, 0.65)';
+      if (phaseDot) {
+        phaseDot.classList.toggle('is-peak', idx === 1);
+      }
+      if (phaseBadge) {
+        phaseBadge.classList.toggle('is-peak', idx === 1);
       }
     };
 
@@ -5113,7 +5136,7 @@ class AgiteMeApp {
       isPlaying = true;
       btnPlayToggle.classList.add('is-looping');
       iconPlay.textContent = '⟳';
-      textPlay.textContent = 'Loop Ativo';
+      textPlay.textContent = 'GIF';
 
       cycleProgress = 0;
       progressTimer = setInterval(() => {
@@ -5153,6 +5176,13 @@ class AgiteMeApp {
 
     if (frames.length > 1) {
       startLoop();
+
+      if (stageViewport) {
+        stageViewport.addEventListener('click', () => {
+          stopLoop();
+          setFrame(currentFrameIdx === 0 ? 1 : 0);
+        });
+      }
 
       btnFrame0.addEventListener('click', () => {
         stopLoop();
