@@ -1405,7 +1405,7 @@ class AgiteMeApp {
                   <span>SÉRIE</span>
                   <span>CARGA (KG)</span>
                   <span>REPS</span>
-                  <span>CHECK</span>
+                  <span style="text-align: right; padding-right: 4px;">CHECK</span>
                 </div>
 
                 ${item.setsData.map((setData, setIndex) => `
@@ -1413,34 +1413,66 @@ class AgiteMeApp {
                     <span class="set-number">${setIndex + 1}</span>
                     <div class="set-input-box">
                       <input 
-                        type="number" 
+                        type="text"
+                        inputmode="decimal"
+                        pattern="[0-9.,]*"
+                        autocomplete="off"
                         class="set-input" 
                         value="${setData.weight}" 
                         data-weight-ex="${exIndex}" 
-                        data-weight-set="${setIndex}" 
-                        min="0" 
-                        step="1"
+                        data-weight-set="${setIndex}"
+                        aria-label="Carga série ${setIndex + 1}"
                       />
                       <span class="set-unit">kg</span>
                     </div>
                     <div class="set-input-box">
                       <input 
-                        type="text" 
+                        type="text"
+                        inputmode="numeric"
+                        pattern="[0-9]*"
+                        autocomplete="off"
                         class="set-input" 
                         value="${setData.reps}" 
                         data-reps-ex="${exIndex}" 
-                        data-reps-set="${setIndex}" 
+                        data-reps-set="${setIndex}"
+                        aria-label="Repetições série ${setIndex + 1}"
                       />
                     </div>
-                    <button 
-                      class="set-check-btn ${setData.completed ? 'done' : ''}" 
-                      data-check-ex="${exIndex}" 
-                      data-check-set="${setIndex}"
-                    >
-                      ✓
-                    </button>
+                    <div class="set-actions-cell">
+                      ${setIndex > 0 ? `
+                        <button
+                          type="button"
+                          class="btn-copy-prev-set"
+                          data-copy-prev-ex="${exIndex}"
+                          data-copy-prev-set="${setIndex}"
+                          title="Copiar carga e repetições da série acima"
+                          aria-label="Copiar série ${setIndex} para série ${setIndex + 1}"
+                        >
+                          <span>Copiar ↑</span>
+                        </button>
+                      ` : ''}
+                      <button 
+                        type="button"
+                        class="set-check-btn ${setData.completed ? 'done' : ''}" 
+                        data-check-ex="${exIndex}" 
+                        data-check-set="${setIndex}"
+                        aria-label="Concluir série ${setIndex + 1}"
+                      >
+                        ✓
+                      </button>
+                    </div>
                   </div>
                 `).join('')}
+
+                ${item.setsData.length > 1 ? `
+                  <button type="button" class="btn-copy-all-sets" data-copy-all-ex="${exIndex}">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                    <span>Copiar 1ª série para todas</span>
+                  </button>
+                ` : ''}
               </div>
             </div>
           `;
@@ -1531,22 +1563,145 @@ class AgiteMeApp {
       });
     });
 
-    // 2. Atualização de Cargas e Reps nos Inputs
+    // 2. Atualização de Cargas e Reps nos Inputs (limpa ao focar, aceita apenas números)
+    const flashCopiedInputs = (exIdx, setIdx, weightVal, repsVal) => {
+      const weightEl = container.querySelector(`[data-weight-ex="${exIdx}"][data-weight-set="${setIdx}"]`);
+      const repsEl = container.querySelector(`[data-reps-ex="${exIdx}"][data-reps-set="${setIdx}"]`);
+      [
+        { el: weightEl, val: weightVal },
+        { el: repsEl, val: repsVal }
+      ].forEach(({ el, val }) => {
+        if (!el) return;
+        el.value = String(val);
+        el.classList.remove('just-copied');
+        void el.offsetWidth;
+        el.classList.add('just-copied');
+        setTimeout(() => el.classList.remove('just-copied'), 550);
+      });
+    };
+
+    const bindNumericInput = (input, { allowDecimal, fallbackValue, onSave }) => {
+      input.addEventListener('focus', () => {
+        input.dataset.prevValue = input.value;
+        input.value = '';
+      });
+
+      input.addEventListener('input', () => {
+        let cleaned = allowDecimal
+          ? input.value.replace(/[^0-9.,]/g, '').replace(',', '.')
+          : input.value.replace(/\D/g, '');
+
+        if (allowDecimal) {
+          const parts = cleaned.split('.');
+          if (parts.length > 2) {
+            cleaned = `${parts[0]}.${parts.slice(1).join('')}`;
+          }
+        }
+
+        if (input.value !== cleaned) {
+          input.value = cleaned;
+        }
+
+        if (cleaned !== '' && cleaned !== '.') {
+          onSave(cleaned);
+        }
+      });
+
+      input.addEventListener('blur', () => {
+        const raw = input.value.trim();
+        if (raw === '' || raw === '.') {
+          const restored = input.dataset.prevValue !== undefined && input.dataset.prevValue !== ''
+            ? input.dataset.prevValue
+            : String(fallbackValue);
+          input.value = restored;
+        } else {
+          const normalized = allowDecimal ? String(parseFloat(raw.replace(',', '.')) || 0) : raw;
+          input.value = normalized;
+          onSave(normalized);
+        }
+      });
+    };
+
     container.querySelectorAll('[data-weight-ex]').forEach(input => {
-      input.addEventListener('change', (e) => {
-        const exIdx = parseInt(input.getAttribute('data-weight-ex'), 10);
-        const setIdx = parseInt(input.getAttribute('data-weight-set'), 10);
-        this.activeSession.exercises[exIdx].setsData[setIdx].weight = parseFloat(e.target.value) || 0;
-        StorageService.saveActiveSession(this.activeSession);
+      const exIdx = parseInt(input.getAttribute('data-weight-ex'), 10);
+      const setIdx = parseInt(input.getAttribute('data-weight-set'), 10);
+      bindNumericInput(input, {
+        allowDecimal: true,
+        fallbackValue: 0,
+        onSave: (val) => {
+          this.activeSession.exercises[exIdx].setsData[setIdx].weight = parseFloat(val) || 0;
+          StorageService.saveActiveSession(this.activeSession);
+        }
       });
     });
 
     container.querySelectorAll('[data-reps-ex]').forEach(input => {
-      input.addEventListener('change', (e) => {
-        const exIdx = parseInt(input.getAttribute('data-reps-ex'), 10);
-        const setIdx = parseInt(input.getAttribute('data-reps-set'), 10);
-        this.activeSession.exercises[exIdx].setsData[setIdx].reps = e.target.value;
+      const exIdx = parseInt(input.getAttribute('data-reps-ex'), 10);
+      const setIdx = parseInt(input.getAttribute('data-reps-set'), 10);
+      bindNumericInput(input, {
+        allowDecimal: false,
+        fallbackValue: '10',
+        onSave: (val) => {
+          this.activeSession.exercises[exIdx].setsData[setIdx].reps = val;
+          StorageService.saveActiveSession(this.activeSession);
+        }
+      });
+    });
+
+    // 2.1 Copiar carga e repetições da série imediatamente acima
+    container.querySelectorAll('[data-copy-prev-ex]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const exIdx = parseInt(btn.getAttribute('data-copy-prev-ex'), 10);
+        const setIdx = parseInt(btn.getAttribute('data-copy-prev-set'), 10);
+        if (setIdx <= 0) return;
+
+        const sets = this.activeSession.exercises[exIdx].setsData;
+        const prevSet = sets[setIdx - 1];
+        const targetSet = sets[setIdx];
+
+        targetSet.weight = prevSet.weight;
+        targetSet.reps = prevSet.reps;
         StorageService.saveActiveSession(this.activeSession);
+
+        flashCopiedInputs(exIdx, setIdx, prevSet.weight, prevSet.reps);
+
+        try {
+          sound.playTapSound();
+          if ('vibrate' in navigator) navigator.vibrate(30);
+        } catch (_) { }
+      });
+    });
+
+    // 2.2 Copiar 1ª série para todas as séries do exercício
+    container.querySelectorAll('[data-copy-all-ex]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const exIdx = parseInt(btn.getAttribute('data-copy-all-ex'), 10);
+        const sets = this.activeSession.exercises[exIdx].setsData;
+        if (!sets || sets.length < 2) return;
+
+        const firstSet = sets[0];
+        for (let s = 1; s < sets.length; s++) {
+          sets[s].weight = firstSet.weight;
+          sets[s].reps = firstSet.reps;
+          flashCopiedInputs(exIdx, s, firstSet.weight, firstSet.reps);
+        }
+        StorageService.saveActiveSession(this.activeSession);
+
+        const labelSpan = btn.querySelector('span');
+        if (labelSpan) {
+          const original = labelSpan.textContent;
+          labelSpan.textContent = 'Séries copiadas ✓';
+          btn.classList.add('copied-feedback');
+          setTimeout(() => {
+            labelSpan.textContent = original;
+            btn.classList.remove('copied-feedback');
+          }, 1200);
+        }
+
+        try {
+          sound.playTapSound();
+          if ('vibrate' in navigator) navigator.vibrate(40);
+        } catch (_) { }
       });
     });
 
