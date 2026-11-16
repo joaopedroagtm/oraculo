@@ -90,9 +90,13 @@ export const StorageService = {
   saveHistory(history) {
     const slug = this.getCurrentUserSlug();
     const key = `agtm_history_${slug}`;
-    localStorage.setItem(key, JSON.stringify(history));
-    if (slug === 'joao') {
-      localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+    try {
+      localStorage.setItem(key, JSON.stringify(history));
+      if (slug === 'joao') {
+        localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+      }
+    } catch (e) {
+      console.warn('Erro ao salvar histórico no localStorage:', e);
     }
   },
 
@@ -101,6 +105,15 @@ export const StorageService = {
     history.unshift(workout);
     this.saveHistory(history);
     return history;
+  },
+
+  updateWorkoutInHistory(workoutId, patch) {
+    const history = this.getHistory();
+    const idx = history.findIndex(w => w.id === workoutId);
+    if (idx === -1) return null;
+    history[idx] = { ...history[idx], ...patch };
+    this.saveHistory(history);
+    return history[idx];
   },
 
   getActiveSession() {
@@ -285,10 +298,11 @@ export const StorageService = {
     let currentStreak = 0;
     let bestStreak = 0;
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const toLocalKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const todayStr = toLocalKey(new Date());
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = toLocalKey(yesterday);
 
     // Se treinou hoje ou ontem, o streak está vivo
     if (sortedDates.includes(todayStr) || sortedDates.includes(yesterdayStr)) {
@@ -298,7 +312,7 @@ export const StorageService = {
       }
 
       while (true) {
-        const dStr = checkDate.toISOString().split('T')[0];
+        const dStr = toLocalKey(checkDate);
         if (sortedDates.includes(dStr)) {
           currentStreak++;
           checkDate.setDate(checkDate.getDate() - 1);

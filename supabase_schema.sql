@@ -29,14 +29,26 @@ create table if not exists public.workouts (
   user_id uuid references auth.users on delete cascade not null,
   routine_id text not null,
   routine_title text not null,
+  routine_focus text,
   date text not null,
   start_time bigint,
   end_time bigint,
   duration_seconds integer default 0,
   total_weight_volume numeric default 0,
   completed_exercises_count integer default 0,
+  photo_url text, -- Foto pós-treino comprimida (Base64 WebP/JPEG ou URL)
+  caption text,
+  description text,
+  exercises jsonb, -- Séries, cargas (kg) e repetições realizadas
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- Migração segura caso a tabela workouts já exista no seu Supabase:
+alter table public.workouts add column if not exists routine_focus text;
+alter table public.workouts add column if not exists photo_url text;
+alter table public.workouts add column if not exists caption text;
+alter table public.workouts add column if not exists description text;
+alter table public.workouts add column if not exists exercises jsonb;
 
 -- 4. Tabela de Conversas com o Oráculo (IA)
 create table if not exists public.oracle_chat (

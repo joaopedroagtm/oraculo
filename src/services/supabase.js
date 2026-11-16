@@ -186,12 +186,17 @@ export const SupabaseService = {
         id: item.id,
         routineId: item.routine_id,
         routineTitle: item.routine_title,
+        routineFocus: item.routine_focus || '',
         date: item.date,
         startTime: item.start_time,
         endTime: item.end_time,
         durationSeconds: item.duration_seconds,
         totalWeightVolume: item.total_weight_volume,
-        completedExercisesCount: item.completed_exercises_count
+        completedExercisesCount: item.completed_exercises_count,
+        photoUrl: item.photo_url || '',
+        caption: item.caption || '',
+        description: item.description || '',
+        exercises: Array.isArray(item.exercises) ? item.exercises : undefined
       }));
     } catch (err) {
       console.warn('Erro ao buscar treinos do Supabase:', err);
@@ -199,32 +204,85 @@ export const SupabaseService = {
     }
   },
 
-  // Salvar Sessão Concluída no Banco
+  // Salvar ou Atualizar Sessão Concluída no Banco (inclui foto, legenda, descrição e séries)
   async addWorkout(userId, workout) {
+    const basePayload = {
+      id: workout.id,
+      user_id: userId,
+      routine_id: workout.routineId,
+      routine_title: workout.routineTitle,
+      date: workout.date,
+      start_time: workout.startTime,
+      end_time: workout.endTime,
+      duration_seconds: workout.durationSeconds,
+      total_weight_volume: workout.totalWeightVolume,
+      completed_exercises_count: workout.completedExercisesCount
+    };
+
+    const fullPayload = {
+      ...basePayload,
+      routine_focus: workout.routineFocus || null,
+      photo_url: workout.photoUrl || null,
+      caption: workout.caption || null,
+      description: workout.description || null,
+      exercises: Array.isArray(workout.exercises) ? workout.exercises : null
+    };
+
     try {
-      const payload = {
-        id: workout.id,
-        user_id: userId,
-        routine_id: workout.routineId,
-        routine_title: workout.routineTitle,
-        date: workout.date,
-        start_time: workout.startTime,
-        end_time: workout.endTime,
-        duration_seconds: workout.durationSeconds,
-        total_weight_volume: workout.totalWeightVolume,
-        completed_exercises_count: workout.completedExercisesCount
-      };
+      const { data, error } = await supabase
+        .from('workouts')
+        .upsert(fullPayload, { onConflict: 'id' })
+        .select()
+        .single();
+
+      if (error) {
+        const msg = String(error.message || '').toLowerCase();
+        if (msg.includes('column') || msg.includes('schema cache') || error.code === 'PGRST204' || error.code === '42703') {
+          const fallback = await supabase
+            .from('workouts')
+            .upsert(basePayload, { onConflict: 'id' })
+            .select()
+            .single();
+          if (fallback.error) throw fallback.error;
+          return { success: true, data: fallback.data };
+        }
+        throw error;
+      }
+      return { success: true, data };
+    } catch (err) {
+      console.error('Erro ao salvar treino no Supabase:', err);
+      return { success: false, error: err.message };
+    }
+  },
+
+  // Atualizar Foto, Legenda e Descrição do Treino no Banco (com upsert automático se ainda não existir na nuvem)
+  async updateWorkoutMedia(userId, workoutId, { photoUrl, caption, description, fullWorkout = null }) {
+    try {
+      if (fullWorkout) {
+        return await this.addWorkout(userId, {
+          ...fullWorkout,
+          photoUrl,
+          caption,
+          description
+        });
+      }
 
       const { data, error } = await supabase
         .from('workouts')
-        .insert(payload)
+        .update({
+          photo_url: photoUrl || null,
+          caption: caption || null,
+          description: description || null
+        })
+        .eq('id', workoutId)
+        .eq('user_id', userId)
         .select()
         .single();
 
       if (error) throw error;
       return { success: true, data };
     } catch (err) {
-      console.error('Erro ao salvar treino no Supabase:', err);
+      console.warn('Sync mídia do treino no Supabase (opcional):', err.message || err);
       return { success: false, error: err.message };
     }
   },

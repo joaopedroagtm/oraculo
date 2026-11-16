@@ -14,6 +14,36 @@ import { getAstronomicalMoonPhase } from './utils/lunar.js';
 import { CosmicAnatomyHologram } from './components/anatomy.js';
 import { initPixelStars } from './components/pixelStars.js';
 import { SplashService, ONBOARDING_SVGS } from './components/splashOnboarding.js';
+import { WorkoutPhotoCalendar, getLocalDateKey } from './components/workoutCalendar.js';
+
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function mergeWorkoutsWithLocal(remoteWorkouts = [], localHistory = []) {
+  const localById = new Map((localHistory || []).map(w => [w.id, w]));
+  const mergedRemote = (remoteWorkouts || []).map(rw => {
+    const local = localById.get(rw.id);
+    if (!local) return rw;
+    return {
+      ...local,
+      ...rw,
+      photoUrl: rw.photoUrl || local.photoUrl || '',
+      caption: rw.caption || local.caption || '',
+      description: rw.description || local.description || '',
+      exercises: (rw.exercises && rw.exercises.length > 0) ? rw.exercises : local.exercises,
+      routineFocus: rw.routineFocus || local.routineFocus
+    };
+  });
+  const remoteIds = new Set(mergedRemote.map(w => w.id));
+  const localOnly = (localHistory || []).filter(l => !remoteIds.has(l.id));
+  return [...mergedRemote, ...localOnly].sort((a, b) => (b.endTime || 0) - (a.endTime || 0));
+}
 
 function hslToHex(h, s, l) {
   l /= 100;
@@ -1087,9 +1117,21 @@ class AgiteMeApp {
           <h2 style="font-family: var(--font-carved); font-size: 1.4rem; color: #fff; margin-bottom: 4px; letter-spacing: 0.5px;">
             ${greetingTime}, ${displayName}!
           </h2>
-          <p style="font-size: 0.82rem; color: var(--concrete-300); margin-bottom: 22px;">
+          <p style="font-size: 0.82rem; color: var(--concrete-300); margin-bottom: 12px;">
             Escolha seu portal do dia para iniciar o treino.
           </p>
+          <div style="margin-bottom: 18px;">
+            <button type="button" class="treino-calendar-jump-pill" id="btn-jump-treino-cal">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <span>Calendário de Fotos & Treinos</span>
+              <span class="jump-arrow">↓</span>
+            </button>
+          </div>
 
           <div style="display: flex; flex-direction: column; gap: 16px;">
             ${(() => {
@@ -1227,8 +1269,31 @@ class AgiteMeApp {
               }).join('');
             })()}
           </div>
+
+          <!-- Calendário Mensal de Treinos com Fotos (Estilo Stories Arquivados) -->
+          <div id="treino-photo-calendar-mount" style="margin-top: 24px; text-align: left;"></div>
         </div>
       `;
+
+      // Monta o Calendário de Fotos & Treinos na aba Treino
+      const treinoCalMount = container.querySelector('#treino-photo-calendar-mount');
+      if (treinoCalMount) {
+        new WorkoutPhotoCalendar(treinoCalMount, StorageService.getHistory(), {
+          title: 'CALENDÁRIO DE TREINOS',
+          subtitle: 'Toque no dia para ver foto, legenda e detalhes da sessão',
+          onSelectDay: (_, dayItems) => {
+            this.openWorkoutDetailsModal(dayItems[0], dayItems);
+          }
+        });
+      }
+
+      const jumpCalBtn = container.querySelector('#btn-jump-treino-cal');
+      if (jumpCalBtn && treinoCalMount) {
+        jumpCalBtn.addEventListener('click', () => {
+          sound.playTapSound();
+          treinoCalMount.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      }
 
       // Interação tátil no Totem 
       const totem = container.querySelector('#treino-portal-totem');
@@ -2200,7 +2265,7 @@ class AgiteMeApp {
 
   finishWorkoutSession() {
     const elapsedSeconds = this.stopwatch.stop();
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateKey(new Date());
 
     // Calcula volume total em kg (peso x reps aproximadas)
     let totalVolumeKg = 0;
@@ -2276,6 +2341,23 @@ class AgiteMeApp {
     } catch (_) { }
 
     this.openCheckoutCelebrationModal(finishedWorkout);
+  }
+
+  saveWorkoutMedia(workoutId, { photoUrl, caption, description }) {
+    const updated = StorageService.updateWorkoutInHistory(workoutId, {
+      photoUrl: photoUrl || '',
+      caption: caption || '',
+      description: description || ''
+    });
+    if (this.supabaseUser && updated) {
+      SupabaseService.updateWorkoutMedia(this.supabaseUser.id, workoutId, {
+        photoUrl: updated.photoUrl,
+        caption: updated.caption,
+        description: updated.description,
+        fullWorkout: updated
+      }).catch(err => console.warn('Sync mídia do treino:', err));
+    }
+    return updated;
   }
 
   // ==========================================
@@ -2471,6 +2553,9 @@ class AgiteMeApp {
         <!-- Heatmap Principal (Colunas Gregas 3D & Ciclo Lunar) -->
         <div id="history-heatmap-mount" style="margin-bottom: 22px;"></div>
 
+        <!-- Calendário Mensal com Fotos Pós-Treino (Estilo Stories Arquivados) -->
+        <div id="streaks-photo-calendar-mount" style="margin-bottom: 22px;"></div>
+
         <!-- Lista de Sessões Anteriores -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
           <h3 style="font-family: var(--font-hud); font-size: 0.82rem; color: var(--concrete-400); letter-spacing: 1.5px; text-transform: uppercase; margin: 0;">
@@ -2506,27 +2591,37 @@ class AgiteMeApp {
 
       return `
             <div class="stone-panel history-session-card" data-history-idx="${index}" style="cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(255,255,255,0.08); padding: 13px 14px;">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
-                <div>
-                  <div style="font-family: var(--font-carved); font-size: 0.95rem; color: #fff;">${item.routineTitle}</div>
-                  <div style="font-size: 0.72rem; color: var(--concrete-400); margin-top: 3px; display: flex; align-items: center; gap: 8px;">
-                    <span style="display: inline-flex; align-items: center; gap: 4px;">
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                        <line x1="16" y1="2" x2="16" y2="6"></line>
-                        <line x1="8" y1="2" x2="8" y2="6"></line>
-                        <line x1="3" y1="10" x2="21" y2="10"></line>
-                      </svg>
-                      ${formattedDate}
-                    </span>
-                    <span>•</span>
-                    <span style="display: inline-flex; align-items: center; gap: 4px;">
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                      </svg>
-                      ${Math.round(item.durationSeconds / 60)} min
-                    </span>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+                <div style="display: flex; align-items: flex-start; gap: 10px; min-width: 0; flex: 1;">
+                  ${item.photoUrl ? `
+                    <div class="history-card-photo-thumb">
+                      <img src="${item.photoUrl}" alt="${escapeHtml(item.caption || item.routineTitle)}" loading="lazy" />
+                    </div>
+                  ` : ''}
+                  <div style="min-width: 0;">
+                    <div style="font-family: var(--font-carved); font-size: 0.95rem; color: #fff;">${item.routineTitle}</div>
+                    ${item.caption ? `
+                      <div style="font-size: 0.74rem; color: #e2e8f0; margin-top: 2px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">“${escapeHtml(item.caption)}”</div>
+                    ` : ''}
+                    <div style="font-size: 0.72rem; color: var(--concrete-400); margin-top: 3px; display: flex; align-items: center; gap: 8px;">
+                      <span style="display: inline-flex; align-items: center; gap: 4px;">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                          <line x1="16" y1="2" x2="16" y2="6"></line>
+                          <line x1="8" y1="2" x2="8" y2="6"></line>
+                          <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        ${formattedDate}
+                      </span>
+                      <span>•</span>
+                      <span style="display: inline-flex; align-items: center; gap: 4px;">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        ${Math.round(item.durationSeconds / 60)} min
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <div style="text-align: right; flex-shrink: 0;">
@@ -2579,6 +2674,17 @@ class AgiteMeApp {
     const heatMount = container.querySelector('#history-heatmap-mount');
     if (heatMount) {
       new WorkoutHeatmap(heatMount, stats.activeDaysSet, history);
+    }
+
+    const streaksCalMount = container.querySelector('#streaks-photo-calendar-mount');
+    if (streaksCalMount) {
+      new WorkoutPhotoCalendar(streaksCalMount, history, {
+        title: 'CALENDÁRIO DE FOTOS & STREAKS',
+        subtitle: 'Cada foto marca um dia vencido no templo',
+        onSelectDay: (_, dayItems) => {
+          this.openWorkoutDetailsModal(dayItems[0], dayItems);
+        }
+      });
     }
   }
 
@@ -3199,17 +3305,68 @@ class AgiteMeApp {
     }
   }
 
+  // Helper compartilhado para upload/compressão de foto pós-treino
+  bindWorkoutPhotoDropzone(rootEl, initialPhotoUrl, onPhotoChange) {
+    const fileInput = rootEl.querySelector('[data-photo-file-input]');
+    const dropzone = rootEl.querySelector('[data-photo-dropzone]');
+    const previewWrap = rootEl.querySelector('[data-photo-preview-wrap]');
+    const previewImg = rootEl.querySelector('[data-photo-preview-img]');
+    const changeBtn = rootEl.querySelector('[data-photo-change-btn]');
+    const removeBtn = rootEl.querySelector('[data-photo-remove-btn]');
+
+    const applyPreview = (url) => {
+      const hasUrl = Boolean(url && url.trim().length > 10);
+      if (previewImg) previewImg.src = hasUrl ? url : '';
+      if (previewWrap) previewWrap.style.display = hasUrl ? 'block' : 'none';
+      if (dropzone) dropzone.style.display = hasUrl ? 'none' : 'flex';
+    };
+
+    applyPreview(initialPhotoUrl);
+
+    const openPicker = () => fileInput && fileInput.click();
+    if (dropzone) dropzone.addEventListener('click', openPicker);
+    if (changeBtn) changeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openPicker();
+    });
+    if (removeBtn) {
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (fileInput) fileInput.value = '';
+        applyPreview('');
+        onPhotoChange('');
+      });
+    }
+
+    if (fileInput) {
+      fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+          const compressed = await SupabaseService.compressImageFile(file, 720, 0.78);
+          applyPreview(compressed);
+          onPhotoChange(compressed);
+          try { sound.playTapSound(); } catch (_) { }
+        } catch (err) {
+          console.warn('Erro ao processar foto do treino:', err);
+        }
+      });
+    }
+  }
+
   // ==========================================
   // MODAL DE DETALHES COMPLETOS DA SESSÃO DE TREINO
   // ==========================================
-  openWorkoutDetailsModal(item) {
+  openWorkoutDetailsModal(item, dayWorkouts = null) {
     const modalContainer = document.querySelector('#modal-container');
-    const [y, m, d] = item.date ? item.date.split('-') : [];
-    const formattedDate = (y && m && d) ? `${d}/${m}/${y}` : (item.date || 'Hoje');
-    const durationMin = Math.round((item.durationSeconds || 0) / 60);
+    // Garante leitura mais recente do storage para refletir edições
+    const freshItem = StorageService.getHistory().find(w => w.id === item.id) || item;
+    const [y, m, d] = freshItem.date ? freshItem.date.split('-') : [];
+    const formattedDate = (y && m && d) ? `${d}/${m}/${y}` : (freshItem.date || 'Hoje');
+    const durationMin = Math.round((freshItem.durationSeconds || 0) / 60);
 
-    const routineObj = DEFAULT_ROUTINES.find(r => r.id === item.routineId || r.title === item.routineTitle);
-    const exercisesList = item.exercises || (routineObj ? routineObj.exercises.map(re => {
+    const routineObj = DEFAULT_ROUTINES.find(r => r.id === freshItem.routineId || r.title === freshItem.routineTitle);
+    const exercisesList = freshItem.exercises || (routineObj ? routineObj.exercises.map(re => {
       const catEx = EXERCISES.find(e => e.id === re.exerciseId);
       return {
         exerciseId: re.exerciseId,
@@ -3228,90 +3385,168 @@ class AgiteMeApp {
     }) : []);
 
     const completedExCount = exercisesList.filter(e => e.isCompleted).length;
+    const hasMedia = Boolean(freshItem.photoUrl || freshItem.caption || freshItem.description);
 
     modalContainer.innerHTML = `
       <div class="modal-overlay" id="workout-details-overlay">
-        <div class="modal-sheet stone-panel workout-details-sheet" style="max-width: 440px; max-height: 85vh; display: flex; flex-direction: column;">
+        <div class="modal-sheet stone-panel workout-details-sheet" style="max-width: 440px; max-height: 88vh; display: flex; flex-direction: column;">
           <div class="modal-handle-bar"></div>
+
+          ${dayWorkouts && dayWorkouts.length > 1 ? `
+            <div class="workout-day-switcher">
+              ${dayWorkouts.map((dw, idx) => `
+                <button type="button" class="day-switch-pill ${dw.id === freshItem.id ? 'active' : ''}" data-switch-day-idx="${idx}">
+                  Treino ${idx + 1} • ${dw.routineTitle.split('•')[0].trim()}
+                </button>
+              `).join('')}
+            </div>
+          ` : ''}
 
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.08);">
             <div>
-              <span style="font-family: var(--font-hud); font-size: 0.68rem; color: var(--neon-cyan); letter-spacing: 1px; text-transform: uppercase;">
-                REGISTRO DE CONSAGRAÇÃO
+              <span style="font-family: var(--font-hud); font-size: 0.68rem; color: var(--concrete-300); letter-spacing: 1px; text-transform: uppercase;">
+                REGISTRO DO TREINO • ${formattedDate}
               </span>
               <h3 style="font-family: var(--font-carved); font-size: 1.15rem; color: #fff; margin: 2px 0 0;">
-                ${item.routineTitle}
+                ${freshItem.routineTitle}
               </h3>
-              ${item.routineFocus || (routineObj && routineObj.focus) ? `
-                <div style="font-size: 0.72rem; color: var(--concrete-300); margin-top: 2px;">
-                  Foco: ${item.routineFocus || routineObj.focus}
+              ${freshItem.routineFocus || (routineObj && routineObj.focus) ? `
+                <div style="font-size: 0.72rem; color: var(--concrete-400); margin-top: 2px;">
+                  Foco: ${freshItem.routineFocus || routineObj.focus}
                 </div>
               ` : ''}
             </div>
-            <button id="btn-close-workout-details" style="background: none; border: none; color: var(--concrete-400); font-size: 1.6rem; cursor: pointer; line-height: 1; padding: 0 4px;">&times;</button>
+            <button id="btn-close-workout-details" class="exercise-modal-close-btn" aria-label="Fechar">&times;</button>
           </div>
 
-          <!-- Métricas da Sessão -->
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;">
-            <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px; text-align: center;">
-              <div style="font-size: 0.65rem; color: var(--concrete-400); text-transform: uppercase; font-family: var(--font-hud);">Data</div>
-              <div style="font-size: 0.82rem; color: #fff; font-weight: 700; margin-top: 2px;">${formattedDate}</div>
-            </div>
-            <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px; text-align: center;">
-              <div style="font-size: 0.65rem; color: var(--concrete-400); text-transform: uppercase; font-family: var(--font-hud);">Duração</div>
-              <div style="font-size: 0.82rem; color: var(--neon-cyan); font-weight: 700; margin-top: 2px;">${durationMin} min</div>
-            </div>
-            <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px; text-align: center;">
-              <div style="font-size: 0.65rem; color: var(--concrete-400); text-transform: uppercase; font-family: var(--font-hud);">Volume</div>
-              <div style="font-size: 0.82rem; color: var(--solar-gold); font-weight: 700; margin-top: 2px;">${item.totalWeightVolume ? item.totalWeightVolume.toLocaleString() + ' kg' : 'Concluído'}</div>
-            </div>
-          </div>
-
-          <!-- Lista de Exercícios Executados -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span style="font-size: 0.72rem; color: var(--concrete-300); font-weight: 700; text-transform: uppercase; font-family: var(--font-hud); letter-spacing: 1px;">
-              EXERCÍCIOS REALIZADOS (${completedExCount}/${exercisesList.length})
-            </span>
-          </div>
-
-          <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; margin-bottom: 14px;">
-            ${exercisesList.map((ex, exIdx) => {
-      const sets = ex.setsData && ex.setsData.length > 0 ? ex.setsData : [];
-      return `
-                <div style="background: rgba(15,23,42,0.6); border: 1px solid ${ex.isCompleted ? 'rgba(56,189,248,0.25)' : 'rgba(255,255,255,0.06)'}; border-radius: 10px; padding: 10px 12px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${sets.length > 0 ? '8px' : '0'};">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <span style="width: 20px; height: 20px; border-radius: 50%; background: ${ex.isCompleted ? 'rgba(56,189,248,0.2)' : 'rgba(255,255,255,0.05)'}; color: ${ex.isCompleted ? '#38bdf8' : 'var(--concrete-400)'}; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; border: 1px solid ${ex.isCompleted ? 'rgba(56,189,248,0.4)' : 'transparent'};">
-                        ${ex.isCompleted ? '✓' : (exIdx + 1)}
-                      </span>
-                      <div>
-                        <div style="font-size: 0.84rem; font-weight: 700; color: #fff;">${ex.name}</div>
-                        ${ex.targetMuscle ? `<span style="font-size: 0.65rem; color: var(--concrete-400);">${ex.targetMuscle}</span>` : ''}
-                      </div>
-                    </div>
-                    <span style="font-size: 0.7rem; font-family: var(--font-hud); color: ${ex.isCompleted ? '#38bdf8' : 'var(--concrete-400)'}; font-weight: 700;">
-                      ${ex.isCompleted ? 'FEITO' : 'NÃO FEITO'}
-                    </span>
+          <div style="flex: 1; overflow-y: auto; padding-right: 2px; margin-bottom: 14px;">
+            <!-- Foto, Legenda e Descrição do Treino (Estilo GymRats / Story) -->
+            <div id="details-media-viewer" style="margin-bottom: 14px;">
+              ${freshItem.photoUrl ? `
+                <div class="workout-story-card">
+                  <div class="workout-story-photo-wrap">
+                    <img src="${freshItem.photoUrl}" alt="${escapeHtml(freshItem.caption || freshItem.routineTitle)}" class="workout-story-photo" />
                   </div>
-
-                  ${sets.length > 0 ? `
-                    <div style="display: flex; flex-direction: column; gap: 4px; padding-left: 28px; border-left: 2px solid rgba(56,189,248,0.15); margin-left: 10px;">
-                      ${sets.map(s => `
-                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: ${s.completed ? 'var(--concrete-200)' : 'var(--concrete-500)'};">
-                          <span>Série ${s.setNumber}: <strong>${s.weight} kg</strong> × <strong>${s.reps} reps</strong></span>
-                          <span style="color: ${s.completed ? '#34d399' : 'var(--concrete-500)'}; font-size: 0.68rem; font-weight: 700;">
-                            ${s.completed ? '✓ Concluída' : 'Pulada'}
-                          </span>
-                        </div>
-                      `).join('')}
+                  ${(freshItem.caption || freshItem.description) ? `
+                    <div class="workout-story-text-box">
+                      ${freshItem.caption ? `<div class="workout-story-caption">${escapeHtml(freshItem.caption)}</div>` : ''}
+                      ${freshItem.description ? `<div class="workout-story-desc">${escapeHtml(freshItem.description)}</div>` : ''}
                     </div>
                   ` : ''}
+                  <button type="button" class="btn-edit-workout-media" id="btn-open-media-editor">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                    </svg>
+                    <span>Editar foto / legenda</span>
+                  </button>
                 </div>
-              `;
+              ` : hasMedia ? `
+                <div class="workout-story-card" style="padding: 12px;">
+                  ${freshItem.caption ? `<div class="workout-story-caption">${escapeHtml(freshItem.caption)}</div>` : ''}
+                  ${freshItem.description ? `<div class="workout-story-desc" style="margin-top: 4px;">${escapeHtml(freshItem.description)}</div>` : ''}
+                  <button type="button" class="btn-edit-workout-media" id="btn-open-media-editor" style="margin-top: 8px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <span>Adicionar foto ou editar nota</span>
+                  </button>
+                </div>
+              ` : `
+                <button type="button" class="btn-add-photo-retroactive" id="btn-open-media-editor">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                  </svg>
+                  <span>Adicionar foto, legenda e descrição deste treino</span>
+                </button>
+              `}
+            </div>
+
+            <!-- Editor Inline (Oculto até clicar em Adicionar / Editar) -->
+            <div id="details-media-editor" class="workout-checkin-composer" style="display: none; margin-bottom: 14px;">
+              <input type="file" accept="image/*" data-photo-file-input style="display: none;" />
+              <div class="checkin-photo-dropzone" data-photo-dropzone>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+                <span>Escolher foto da galeria ou câmera</span>
+              </div>
+              <div class="checkin-photo-preview-wrap" data-photo-preview-wrap style="display: none;">
+                <img data-photo-preview-img class="checkin-photo-preview" alt="Prévia do treino" />
+                <div class="checkin-photo-overlay-actions">
+                  <button type="button" class="checkin-photo-mini-btn" data-photo-change-btn>Trocar</button>
+                  <button type="button" class="checkin-photo-mini-btn is-danger" data-photo-remove-btn>Remover</button>
+                </div>
+              </div>
+              <input type="text" id="edit-media-caption" class="checkin-input" maxlength="90" placeholder="Legenda (ex: Treino pago! 🔥)" value="${escapeHtml(freshItem.caption || '')}" />
+              <textarea id="edit-media-desc" class="checkin-textarea" rows="2" maxlength="400" placeholder="Descrição ou notas sobre cargas e sensação...">${escapeHtml(freshItem.description || '')}</textarea>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" id="btn-cancel-media-edit" class="btn-exercise-guide" style="flex: 1;">Cancelar</button>
+                <button type="button" id="btn-save-media-edit" class="btn-enter-temple" style="flex: 2; padding: 9px; font-size: 0.78rem;">Salvar Registro</button>
+              </div>
+            </div>
+
+            <!-- Métricas da Sessão -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;">
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 10px; text-align: center;">
+                <div style="font-size: 0.65rem; color: var(--concrete-400); text-transform: uppercase; font-family: var(--font-hud);">Data</div>
+                <div style="font-size: 0.82rem; color: #fff; font-weight: 700; margin-top: 2px;">${formattedDate}</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 10px; text-align: center;">
+                <div style="font-size: 0.65rem; color: var(--concrete-400); text-transform: uppercase; font-family: var(--font-hud);">Duração</div>
+                <div style="font-size: 0.82rem; color: #ffffff; font-weight: 700; margin-top: 2px;">${durationMin} min</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 10px; text-align: center;">
+                <div style="font-size: 0.65rem; color: var(--concrete-400); text-transform: uppercase; font-family: var(--font-hud);">Volume</div>
+                <div style="font-size: 0.82rem; color: var(--solar-gold); font-weight: 700; margin-top: 2px;">${freshItem.totalWeightVolume ? freshItem.totalWeightVolume.toLocaleString() + ' kg' : 'Concluído'}</div>
+              </div>
+            </div>
+
+            <!-- Lista de Exercícios Executados -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 0.72rem; color: var(--concrete-300); font-weight: 700; text-transform: uppercase; font-family: var(--font-hud); letter-spacing: 1px;">
+                EXERCÍCIOS REALIZADOS (${completedExCount}/${exercisesList.length})
+              </span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              ${exercisesList.map((ex, exIdx) => {
+      const sets = ex.setsData && ex.setsData.length > 0 ? ex.setsData : [];
+      return `
+                  <div style="background: rgba(255,255,255,0.03); border: 1px solid ${ex.isCompleted ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.06)'}; border-radius: 10px; padding: 10px 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${sets.length > 0 ? '8px' : '0'};">
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="width: 20px; height: 20px; border-radius: 50%; background: ${ex.isCompleted ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.05)'}; color: ${ex.isCompleted ? '#ffffff' : 'var(--concrete-400)'}; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; border: 1px solid ${ex.isCompleted ? 'rgba(255,255,255,0.3)' : 'transparent'};">
+                          ${ex.isCompleted ? '✓' : (exIdx + 1)}
+                        </span>
+                        <div>
+                          <div style="font-size: 0.84rem; font-weight: 700; color: #fff;">${ex.name}</div>
+                          ${ex.targetMuscle ? `<span style="font-size: 0.65rem; color: var(--concrete-400);">${ex.targetMuscle}</span>` : ''}
+                        </div>
+                      </div>
+                      <span style="font-size: 0.7rem; font-family: var(--font-hud); color: ${ex.isCompleted ? '#e2e8f0' : 'var(--concrete-400)'}; font-weight: 700;">
+                        ${ex.isCompleted ? 'FEITO' : 'NÃO FEITO'}
+                      </span>
+                    </div>
+
+                    ${sets.length > 0 ? `
+                      <div style="display: flex; flex-direction: column; gap: 4px; padding-left: 28px; border-left: 2px solid rgba(255,255,255,0.14); margin-left: 10px;">
+                        ${sets.map(s => `
+                          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: ${s.completed ? 'var(--concrete-200)' : 'var(--concrete-500)'};">
+                            <span>Série ${s.setNumber}: <strong>${s.weight} kg</strong> × <strong>${s.reps} reps</strong></span>
+                            <span style="color: ${s.completed ? '#34d399' : 'var(--concrete-500)'}; font-size: 0.68rem; font-weight: 700;">
+                              ${s.completed ? '✓ Concluída' : 'Pulada'}
+                            </span>
+                          </div>
+                        `).join('')}
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
     }).join('')}
+            </div>
           </div>
 
-          <button id="btn-done-workout-details" class="btn-enter-temple" style="padding: 10px; font-size: 0.8rem; width: 100%;">
+          <button id="btn-done-workout-details" class="btn-enter-temple" style="padding: 11px; font-size: 0.82rem; width: 100%;">
             Fechar
           </button>
         </div>
@@ -3324,6 +3559,64 @@ class AgiteMeApp {
     modalContainer.querySelector('#workout-details-overlay').addEventListener('click', (e) => {
       if (e.target.id === 'workout-details-overlay') close();
     });
+
+    // Alternar entre treinos do mesmo dia (se houver mais de 1)
+    if (dayWorkouts && dayWorkouts.length > 1) {
+      modalContainer.querySelectorAll('[data-switch-day-idx]').forEach(pill => {
+        pill.addEventListener('click', () => {
+          const idx = parseInt(pill.getAttribute('data-switch-day-idx'), 10);
+          if (dayWorkouts[idx]) {
+            this.openWorkoutDetailsModal(dayWorkouts[idx], dayWorkouts);
+          }
+        });
+      });
+    }
+
+    // Editor inline de foto, legenda e descrição
+    const viewerBox = modalContainer.querySelector('#details-media-viewer');
+    const editorBox = modalContainer.querySelector('#details-media-editor');
+    const openEditorBtn = modalContainer.querySelector('#btn-open-media-editor');
+    const cancelEditBtn = modalContainer.querySelector('#btn-cancel-media-edit');
+    const saveEditBtn = modalContainer.querySelector('#btn-save-media-edit');
+    let draftPhotoUrl = freshItem.photoUrl || '';
+
+    if (editorBox) {
+      this.bindWorkoutPhotoDropzone(editorBox, draftPhotoUrl, (newUrl) => {
+        draftPhotoUrl = newUrl;
+      });
+    }
+
+    if (openEditorBtn && editorBox && viewerBox) {
+      openEditorBtn.addEventListener('click', () => {
+        viewerBox.style.display = 'none';
+        editorBox.style.display = 'flex';
+      });
+    }
+
+    if (cancelEditBtn && editorBox && viewerBox) {
+      cancelEditBtn.addEventListener('click', () => {
+        editorBox.style.display = 'none';
+        viewerBox.style.display = 'block';
+      });
+    }
+
+    if (saveEditBtn) {
+      saveEditBtn.addEventListener('click', () => {
+        const caption = modalContainer.querySelector('#edit-media-caption')?.value.trim() || '';
+        const description = modalContainer.querySelector('#edit-media-desc')?.value.trim() || '';
+        const updated = this.saveWorkoutMedia(freshItem.id, {
+          photoUrl: draftPhotoUrl,
+          caption,
+          description
+        });
+        try { sound.playTapSound(); } catch (_) { }
+        this.renderCurrentTab();
+        const refreshedDayList = dayWorkouts
+          ? dayWorkouts.map(w => (w.id === freshItem.id && updated ? updated : w))
+          : null;
+        this.openWorkoutDetailsModal(updated || freshItem, refreshedDayList);
+      });
+    }
   }
 
   // Modal Didático: Sistema de Honra (Patentes vs Insígnias)
@@ -4258,10 +4551,11 @@ class AgiteMeApp {
             await SupabaseService.saveProfile(this.supabaseUser.id, this.profile);
           }
 
-          // Busca treinos remotos
+          // Busca treinos remotos preservando fotos/legendas/exercícios locais
           const remoteWorkouts = await SupabaseService.getWorkouts(this.supabaseUser.id);
           if (remoteWorkouts && remoteWorkouts.length > 0) {
-            StorageService.saveHistory(remoteWorkouts);
+            const merged = mergeWorkoutsWithLocal(remoteWorkouts, StorageService.getHistory());
+            StorageService.saveHistory(merged);
           }
 
           StorageService.saveProfile(this.profile);
@@ -5036,12 +5330,11 @@ class AgiteMeApp {
               };
             }
 
-            // Sincroniza histórico de treinos do Supabase se houver
+            // Sincroniza histórico de treinos do Supabase preservando fotos/legendas/exercícios locais
             try {
               const remoteWorkouts = await SupabaseService.getWorkouts(this.supabaseUser.id);
               if (remoteWorkouts && remoteWorkouts.length > 0) {
-                const localHistory = StorageService.getHistory();
-                const merged = [...remoteWorkouts, ...localHistory.filter(l => !remoteWorkouts.some(r => r.id === l.id))];
+                const merged = mergeWorkoutsWithLocal(remoteWorkouts, StorageService.getHistory());
                 StorageService.saveHistory(merged);
               }
             } catch (wErr) {
@@ -5361,65 +5654,147 @@ class AgiteMeApp {
 
   openCheckoutCelebrationModal(workout) {
     const modalContainer = document.querySelector('#modal-container');
-    const mins = Math.round(workout.durationSeconds / 60);
+    const mins = Math.round((workout.durationSeconds || 0) / 60);
+    let selectedPhotoUrl = workout.photoUrl || '';
 
     modalContainer.innerHTML = `
-      <div class="modal-overlay">
-        <div class="modal-sheet checkout-celebration-card stone-panel">
-          <div class="celebration-trophy" style="display: flex; justify-content: center; margin-bottom: 8px;">
-            <div style="width: 62px; height: 62px; border-radius: 50%; background: rgba(56, 189, 248, 0.12); border: 1.5px solid rgba(56, 189, 248, 0.4); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 24px rgba(56, 189, 248, 0.35);">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.7));">
-                <path d="M2 9.5L12 4l10 5.5v1H2v-1z" fill="rgba(56, 189, 248, 0.2)" />
-                <line x1="6" y1="11" x2="6" y2="18" />
-                <line x1="10" y1="11" x2="10" y2="18" />
-                <line x1="14" y1="11" x2="14" y2="18" />
-                <line x1="18" y1="11" x2="18" y2="18" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-                <line x1="2" y1="21" x2="22" y2="21" />
+      <div class="modal-overlay" id="checkout-celebration-overlay">
+        <div class="modal-sheet checkout-celebration-card stone-panel checkout-checkin-sheet">
+          <div class="modal-handle-bar"></div>
+
+          <div class="checkout-checkin-header">
+            <div class="checkout-checkin-badge">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
               </svg>
+              <span>TREINO CONSAGRADO</span>
+            </div>
+            <h2 class="celebration-title" style="margin-bottom: 2px;">${workout.routineTitle || 'Treino do Dia'}</h2>
+            <div class="celebration-subtitle" style="margin-bottom: 14px;">
+              Registre sua foto e nota do treino para eternizar no calendário.
             </div>
           </div>
-          <h2 class="celebration-title">TREINO CONSAGRADO!</h2>
-          <div class="celebration-subtitle">Você venceu o dia no templo de ferro.</div>
 
+          <!-- Dados do Treino Concluído -->
           <div class="checkout-stats-recap">
             <div class="recap-box">
               <div class="recap-val">${mins} min</div>
-              <div class="recap-lbl">Tempo Total</div>
+              <div class="recap-lbl">Tempo</div>
             </div>
             <div class="recap-box">
-              <div class="recap-val" style="color: var(--night-blue-accent);">${workout.totalWeightVolume.toLocaleString()} kg</div>
-              <div class="recap-lbl">Volume Levantado</div>
+              <div class="recap-val">${workout.totalWeightVolume.toLocaleString()} kg</div>
+              <div class="recap-lbl">Volume</div>
             </div>
             <div class="recap-box">
-              <div class="recap-val" style="color: var(--baby-pink);">${workout.completedExercisesCount}</div>
-              <div class="recap-lbl">Exercícios Feitos</div>
+              <div class="recap-val">${workout.completedExercisesCount}</div>
+              <div class="recap-lbl">Exercícios</div>
             </div>
             <div class="recap-box">
-              <div class="recap-val" style="color: var(--solar-gold); display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+              <div class="recap-val" style="color: var(--solar-gold); display: inline-flex; align-items: center; justify-content: center; gap: 3px;">
                 +1 DIA
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z" fill="rgba(249,115,22,0.3)"/>
                 </svg>
               </div>
-              <div class="recap-lbl">Streak Atualizado</div>
+              <div class="recap-lbl">Streak</div>
             </div>
           </div>
 
-          <p style="font-size: 0.8rem; color: var(--concrete-300); font-style: italic; margin-bottom: 24px;">
-            “O descanso agora é o solo onde a sua força floresce.”
-          </p>
+          <!-- Composer Estilo GymRats: Foto + Legenda + Descrição -->
+          <div class="workout-checkin-composer" id="checkout-checkin-composer">
+            <input type="file" accept="image/*" data-photo-file-input style="display: none;" />
 
-          <button class="btn-enter-temple" id="btn-close-checkout">
-            RETORNAR AO TEMPLO 
-          </button>
+            <div class="checkin-photo-dropzone" data-photo-dropzone>
+              <div class="checkin-camera-circle">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+              </div>
+              <strong>Adicionar foto pós-treino</strong>
+              <small>Câmera ou galeria • Aparece como ícone no seu calendário</small>
+            </div>
+
+            <div class="checkin-photo-preview-wrap" data-photo-preview-wrap style="display: none;">
+              <img data-photo-preview-img class="checkin-photo-preview" alt="Foto do treino" />
+              <div class="checkin-photo-overlay-actions">
+                <button type="button" class="checkin-photo-mini-btn" data-photo-change-btn>Trocar foto</button>
+                <button type="button" class="checkin-photo-mini-btn is-danger" data-photo-remove-btn>Remover</button>
+              </div>
+            </div>
+
+            <div class="checkin-fields-stack">
+              <label class="checkin-field-label" for="checkout-caption-input">LEGENDA</label>
+              <input
+                type="text"
+                id="checkout-caption-input"
+                class="checkin-input"
+                maxlength="90"
+                placeholder="Ex: Treino pago! Supino subiu hoje 🔥"
+                autocomplete="off"
+              />
+
+              <label class="checkin-field-label" for="checkout-desc-input">DESCRIÇÃO / NOTAS</label>
+              <textarea
+                id="checkout-desc-input"
+                class="checkin-textarea"
+                rows="2"
+                maxlength="400"
+                placeholder="Como foi a energia, cargas ou sensação do treino..."
+              ></textarea>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
+            <button type="button" class="btn-enter-temple" id="btn-save-checkout-checkin" style="padding: 13px;">
+              SALVAR E VER NO CALENDÁRIO
+            </button>
+            <button type="button" class="checkout-skip-btn" id="btn-close-checkout">
+              Pular por agora
+            </button>
+          </div>
         </div>
       </div>
     `;
 
-    modalContainer.querySelector('#btn-close-checkout').addEventListener('click', () => {
+    const composerEl = modalContainer.querySelector('#checkout-checkin-composer');
+    this.bindWorkoutPhotoDropzone(composerEl, selectedPhotoUrl, (newUrl) => {
+      selectedPhotoUrl = newUrl;
+    });
+
+    const finishAndNavigate = (scrollToCalendar = false) => {
       modalContainer.innerHTML = '';
-      this.switchTab('templo');
+      this.switchTab('treino');
+      if (scrollToCalendar) {
+        setTimeout(() => {
+          const calEl = document.querySelector('#treino-photo-calendar-mount');
+          if (calEl) calEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 120);
+      }
+    };
+
+    modalContainer.querySelector('#btn-save-checkout-checkin').addEventListener('click', () => {
+      const caption = modalContainer.querySelector('#checkout-caption-input')?.value.trim() || '';
+      const description = modalContainer.querySelector('#checkout-desc-input')?.value.trim() || '';
+
+      if (selectedPhotoUrl || caption || description) {
+        this.saveWorkoutMedia(workout.id, {
+          photoUrl: selectedPhotoUrl,
+          caption,
+          description
+        });
+      }
+
+      try {
+        sound.playTapSound();
+        if ('vibrate' in navigator) navigator.vibrate(40);
+      } catch (_) { }
+
+      finishAndNavigate(true);
+    });
+
+    modalContainer.querySelector('#btn-close-checkout').addEventListener('click', () => {
+      finishAndNavigate(false);
     });
   }
 }
