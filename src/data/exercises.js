@@ -683,6 +683,168 @@ export const EXERCISES = [
       'Puxar com a força dos braços.'
     ],
     goldTip: 'Pense em aproximar as suas costelas dos ossos da sua bacia; o movimento vem puramente da flexão da coluna.'
+  },
+  {
+    id: 'supino-maquina',
+    name: 'Supino Máquina Articulado',
+    enName: 'Machine Chest Press',
+    muscle: 'peito',
+    muscleLabel: 'Peitoral (Estabilidade Total)',
+    equipment: 'Máquina Chest Press',
+    difficulty: 'Iniciante',
+    targetGroup: 'Peitoral Maior, Deltóide Anterior e Tríceps',
+    frames: [
+      `${BASE_IMG}/Machine_Bench_Press/0.jpg`,
+      `${BASE_IMG}/Machine_Bench_Press/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/machine-chest-press',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+supino+maquina',
+    steps: [
+      'Ajuste o banco de modo que as manoplas fiquem alinhadas com a linha média do seu peito.',
+      'Encoste bem as costas e junte levemente as escápulas no encosto.',
+      'Empurre as manoplas à frente expirando, sem travar totalmente os cotovelos no final.',
+      'Volte devagar controlando o peso até sentir o peitoral alongar.'
+    ],
+    mistakes: [
+      'Ajustar o banco alto ou baixo demais, jogando a tensão para os ombros.',
+      'Desencostar os ombros e a lombar do banco ao empurrar.'
+    ],
+    goldTip: 'Por ser guiado na máquina, é ideal para focar 100% em força e sobrecarga progressiva com segurança.'
+  },
+  {
+    id: 'triceps-polia-barra',
+    name: 'Tríceps na Polia com Barra Reta',
+    enName: 'Triceps Pushdown',
+    muscle: 'triceps',
+    muscleLabel: 'Tríceps Lateral & Medial',
+    equipment: 'Polia Alta + Barra Reta/V',
+    difficulty: 'Iniciante',
+    targetGroup: 'Tríceps Braquial (Ênfase Cabeça Lateral)',
+    frames: [
+      `${BASE_IMG}/Triceps_Pushdown/0.jpg`,
+      `${BASE_IMG}/Triceps_Pushdown/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/cable-bar-pushdown',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+triceps+pulley+barra',
+    steps: [
+      'Segure a barra na polia alta com pegada pronada (palmas para baixo) na largura dos ombros.',
+      'Trave os cotovelos colados ao lado do tronco e incline levemente o peito à frente.',
+      'Empurre a barra para baixo até estender os braços por completo.',
+      'Suba controlando até os antebraços passarem um pouco de 90°, mantendo os cotovelos parados.'
+    ],
+    mistakes: [
+      'Abrir os cotovelos para fora ou jogá-los para frente/trás.',
+      'Usar o peso do corpo em cima da barra para empurrar.'
+    ],
+    goldTip: 'Com a barra reta você geralmente consegue colocar mais carga estável do que na corda; ótimo para variar estímulos.'
+  },
+  {
+    id: 'rosca-barra-w',
+    name: 'Rosca Direta com Barra W',
+    enName: 'EZ-Bar Curl',
+    muscle: 'biceps',
+    muscleLabel: 'Bíceps Completo (Conforto de Punho)',
+    equipment: 'Barra W',
+    difficulty: 'Iniciante',
+    targetGroup: 'Bíceps Braquial e Braquiorradial',
+    frames: [
+      `${BASE_IMG}/EZ-Bar_Curl/0.jpg`,
+      `${BASE_IMG}/EZ-Bar_Curl/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/ez-bar-curl',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+rosca+direta+barra+w',
+    steps: [
+      'Segure a barra W na curvatura natural das mãos (pegada semi-supinada, confortável para os punhos).',
+      'Mantenha os cotovelos fixos ao lado do corpo e a postura ereta.',
+      'Suba a barra contraindo o bíceps até a altura do peito sem balançar o tronco.',
+      'Desça controlando em 2 a 3 segundos até quase estender totalmente os braços.'
+    ],
+    mistakes: [
+      'Dar impulso com a lombar para subir a barra.',
+      'Levar os cotovelos para frente na subida.'
+    ],
+    goldTip: 'A curvatura da Barra W alivia a pressão nos punhos e permite progredir carga com muito conforto.'
+  },
+  {
+    id: 'agachamento-hack',
+    name: 'Agachamento Hack (Máquina)',
+    enName: 'Hack Squat',
+    muscle: 'pernas',
+    muscleLabel: 'Quadríceps & Glúteos Guiado',
+    equipment: 'Máquina Hack Squat',
+    difficulty: 'Iniciante',
+    targetGroup: 'Quadríceps, Glúteos e Estabilidade de Core',
+    frames: [
+      `${BASE_IMG}/Hack_Squat/0.jpg`,
+      `${BASE_IMG}/Hack_Squat/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/machine-hack-squat',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+agachamento+hack',
+    steps: [
+      'Encoste bem as costas e os ombros nas almofadas do aparelho e posicione os pés na plataforma na largura dos ombros.',
+      'Destrave a trava de segurança lateral e inspire fundo.',
+      'Desça controlando até os joelhos formarem cerca de 90° (ou máximo conforto mantendo os calcanhares apoiados).',
+      'Empurre a plataforma com os calcanhares e o meio do pé até subir sem travar os joelhos.'
+    ],
+    mistakes: [
+      'Tirar os calcanhares da plataforma durante a descida.',
+      'Deixar os joelhos caírem para dentro (valgo).'
+    ],
+    goldTip: 'Ótimo substituto ou complemento ao Leg Press para trabalhar o agachamento com total proteção para a lombar.'
+  },
+  {
+    id: 'stiff-halteres',
+    name: 'Stiff com Halteres',
+    enName: 'Stiff-Legged Dumbbell Deadlift',
+    muscle: 'pernas',
+    muscleLabel: 'Posteriores & Glúteos',
+    equipment: 'Par de Halteres',
+    difficulty: 'Iniciante',
+    targetGroup: 'Isquiotibiais (Posterior de Coxa), Glúteos e Lombar',
+    frames: [
+      `${BASE_IMG}/Stiff-Legged_Dumbbell_Deadlift/0.jpg`,
+      `${BASE_IMG}/Stiff-Legged_Dumbbell_Deadlift/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/dumbbell-romanian-deadlift',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+stiff+com+halteres',
+    steps: [
+      'Fique em pé com os pés na largura do quadril, segurando os halteres à frente das coxas e joelhos levemente destravados.',
+      'Com a coluna neutra e peito aberto, empurre o quadril para trás como se fosse fechar uma porta com o bumbum.',
+      'Desça os halteres rente às pernas até sentir alongar bem a parte de trás da coxa (geralmente abaixo dos joelhos).',
+      'Contraia os glúteos para trazer o quadril de volta à posição inicial.'
+    ],
+    mistakes: [
+      'Arredondar a coluna (corcunda) para tentar descer até o chão.',
+      'Afastar os halteres das pernas, sobrecarregando a lombar.'
+    ],
+    goldTip: 'O segredo do Stiff não é abaixar o tronco, e sim empurrar o quadril o máximo possível para trás com a coluna reta.'
+  },
+  {
+    id: 'cadeira-abdutora',
+    name: 'Cadeira Abdutora',
+    enName: 'Thigh Abductor',
+    muscle: 'pernas',
+    muscleLabel: 'Glúteo Médio & Estabilidade',
+    equipment: 'Máquina Abdutora',
+    difficulty: 'Iniciante',
+    targetGroup: 'Glúteo Médio, Glúteo Máximo Superior e Estabilizadores de Quadril',
+    frames: [
+      `${BASE_IMG}/Thigh_Abductor/0.jpg`,
+      `${BASE_IMG}/Thigh_Abductor/1.jpg`
+    ],
+    muscleWikiUrl: 'https://musclewiki.com/pt-br/exercise/machine-hip-abduction',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=como+fazer+cadeira+abdutora',
+    steps: [
+      'Sente-se na máquina com as costas apoiadas (ou tronco levemente inclinado à frente para maior ativação de glúteo).',
+      'Posicione a parte externa dos joelhos/coxas nas almofadas.',
+      'Empurre as pernas para fora abrindo ao máximo e segure 1 segundo no pico.',
+      'Retorne devagar controlando o peso sem deixar as placas baterem.'
+    ],
+    mistakes: [
+      'Fazer o movimento rápido usando impulso e batendo os pesos.',
+      'Prender a respiração durante as repetições.'
+    ],
+    goldTip: 'Fortalecer o glúteo médio na abdutora melhora a estabilidade dos joelhos no Leg Press e no Agachamento.'
   }
 ];
 

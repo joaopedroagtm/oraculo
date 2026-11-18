@@ -2,7 +2,7 @@
 // Estética 
 import confetti from 'canvas-confetti';
 import { EXERCISES, MUSCLE_GROUPS } from './data/exercises.js';
-import { DEFAULT_ROUTINES, getNextRoutine } from './data/routines.js';
+import { DEFAULT_ROUTINES, TRAINING_SPLITS, getSplitById, getNextRoutine } from './data/routines.js';
 import { StorageService } from './services/storage.js';
 import { sound } from './services/audio.js';
 import { GeminiService } from './services/gemini.js';
@@ -23,6 +23,13 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function formatRepsMeta(repsVal) {
+  const s = String(repsVal ?? '').trim();
+  if (!s) return '10 reps';
+  if (/seg|min|isom|falha/i.test(s)) return s;
+  return `${s} reps`;
 }
 
 function mergeWorkoutsWithLocal(remoteWorkouts = [], localHistory = []) {
@@ -1118,9 +1125,9 @@ class AgiteMeApp {
             ${greetingTime}, ${displayName}!
           </h2>
           <p style="font-size: 0.82rem; color: var(--concrete-300); margin-bottom: 12px;">
-            Escolha seu portal do dia para iniciar o treino.
+            Escolha sua divisão e inicie o portal de hoje.
           </p>
-          <div style="margin-bottom: 18px;">
+          <div style="margin-bottom: 16px;">
             <button type="button" class="treino-calendar-jump-pill" id="btn-jump-treino-cal">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -1133,142 +1140,158 @@ class AgiteMeApp {
             </button>
           </div>
 
-          <div style="display: flex; flex-direction: column; gap: 16px;">
-            ${(() => {
-              const routineMetaConfig = {
-                'portal-a': {
-                  accent: '#38bdf8',
-                  glow: 'rgba(56, 189, 248, 0.35)',
-                  badgeBg: 'rgba(56, 189, 248, 0.12)',
-                  badgeBorder: 'rgba(56, 189, 248, 0.35)',
-                  svgGlyph: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M8 11h8"/><path d="M12 7v8"/></svg>`,
-                  muscles: ['Peitoral', 'Deltoides', 'Tríceps'],
-                  focusTag: 'EMPURRAR • FORÇA SUPERIOR',
-                  setsEstimate: '~15 Séries'
-                },
-                'portal-b': {
-                  accent: '#ec4899',
-                  glow: 'rgba(236, 72, 153, 0.35)',
-                  badgeBg: 'rgba(236, 72, 153, 0.12)',
-                  badgeBorder: 'rgba(236, 72, 153, 0.35)',
-                  svgGlyph: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v14"/><path d="M18 5v14"/><path d="M2 12h20"/><rect x="5" y="7" width="2" height="10" rx="1" fill="rgba(236,72,153,0.3)"/><rect x="17" y="7" width="2" height="10" rx="1" fill="rgba(236,72,153,0.3)"/></svg>`,
-                  muscles: ['Costas', 'Bíceps', 'Core'],
-                  focusTag: 'PUXAR • EXPANSÃO DORSAL',
-                  setsEstimate: '~12 Séries'
-                },
-                'portal-c': {
-                  accent: '#fbbf24',
-                  glow: 'rgba(251, 191, 36, 0.35)',
-                  badgeBg: 'rgba(251, 191, 36, 0.12)',
-                  badgeBorder: 'rgba(251, 191, 36, 0.35)',
-                  svgGlyph: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="rgba(251,191,36,0.25)"/></svg>`,
-                  muscles: ['Quadríceps', 'Posteriores', 'Pilares'],
-                  focusTag: 'PERNAS • BASE DE CONCRETO',
-                  setsEstimate: '~14 Séries'
-                }
-              };
+          ${(() => {
+            const activeSplitId = StorageService.getActiveSplitId();
+            const activeSplit = getSplitById(activeSplitId);
+            const currentRoutines = StorageService.getRoutines(activeSplitId);
+            const history = StorageService.getHistory();
+            const suggestedRoutine = getNextRoutine(history, currentRoutines);
 
-              const currentRoutines = StorageService.getRoutines();
+            const renderPortalCard = (routine, isSuggested = false) => {
+              const totalSets = (routine.exercises || []).reduce((acc, ex) => acc + (ex.sets || 3), 0);
+              const muscles = routine.muscles || ['Força', 'Controle'];
+              const accent = routine.color || '#38bdf8';
 
-              return currentRoutines.map(routine => {
-                const meta = routineMetaConfig[routine.id] || {
-                  accent: routine.color || '#38bdf8',
-                  glow: 'rgba(56, 189, 248, 0.3)',
-                  badgeBg: 'rgba(56, 189, 248, 0.1)',
-                  badgeBorder: 'rgba(56, 189, 248, 0.25)',
-                  svgGlyph: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
-                  muscles: ['Geral', 'Força'],
-                  focusTag: routine.subtitle || 'PORTAL SAGRADO',
-                  setsEstimate: '~12 Séries'
-                };
-
-                return `
-                  <div class="portal-living-card" data-routine-id="${routine.id}" style="--portal-accent: ${meta.accent}; --portal-glow: ${meta.glow}; --portal-badge-bg: ${meta.badgeBg}; --portal-badge-border: ${meta.badgeBorder};" title="Toque para iniciar ${routine.title}">
-                    <div class="portal-ambient-glow"></div>
-
-                    <!-- Barra Superior do Portal -->
-                    <div class="portal-top-bar">
-                      <div class="portal-badge-chip">
-                        <span class="portal-glyph-slot">${meta.svgGlyph}</span>
-                        <span>${routine.code}</span>
-                      </div>
+              return `
+                <div class="portal-living-card ${isSuggested ? 'is-suggested-today' : 'is-compact-portal'}" data-routine-id="${routine.id}" style="--portal-accent: ${accent};" title="Toque para iniciar ${routine.title}">
+                  <div class="portal-top-bar">
+                    <div class="portal-badge-chip">
+                      <span>${isSuggested ? 'SUGERIDO HOJE' : routine.code}</span>
+                    </div>
+                    <div class="portal-top-right-chips">
                       <div class="portal-time-chip">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                           <circle cx="12" cy="12" r="9"/>
                           <polyline points="12 6 12 12 15 15"/>
                         </svg>
-                        <span>~${routine.durationMin} min</span>
+                        <span>~${routine.durationMin || 40} min</span>
                       </div>
+                      ${routine.isCustom ? `
+                        <button type="button" class="btn-delete-custom-portal" data-delete-portal="${routine.id}" title="Excluir portal personalizado" onclick="event.stopPropagation()">&times;</button>
+                      ` : ''}
                     </div>
+                  </div>
 
-                    <!-- Título e Subtítulo -->
-                    <div class="portal-title-row">
-                      <div class="portal-living-subtitle">${meta.focusTag}</div>
-                      <h3 class="portal-living-title">${routine.title}</h3>
+                  <div class="portal-title-row">
+                    <div class="portal-living-subtitle">${routine.focus || routine.subtitle || 'TREINO ESTRUTURADO'}</div>
+                    <h3 class="portal-living-title">${routine.title}</h3>
+                  </div>
+
+                  ${isSuggested && routine.description ? `<p class="portal-living-desc">${routine.description}</p>` : ''}
+
+                  <div class="portal-muscle-tags">
+                    ${muscles.map(m => `
+                      <span class="portal-muscle-pill">
+                        <span class="portal-muscle-dot"></span>
+                        ${m}
+                      </span>
+                    `).join('')}
+                  </div>
+
+                  <div class="portal-meta-bar">
+                    <span>Exercícios: <strong class="portal-meta-highlight">${routine.exercises ? routine.exercises.length : 0}</strong></span>
+                    <span>Volume: <strong class="portal-meta-highlight">~${totalSets} Séries</strong></span>
+                  </div>
+
+                  <!-- Lista/Accordion de Exercícios do Portal com Troca Rápida -->
+                  <div class="portal-exercises-preview" onclick="event.stopPropagation()">
+                    <div class="portal-exercises-preview-header">
+                      <span class="portal-ex-preview-title">MOVIMENTOS (${routine.exercises ? routine.exercises.length : 0})</span>
+                      <button class="btn-toggle-portal-exercises" data-toggle-portal-ex="${routine.id}" type="button">
+                        <span>Personalizar</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                      </button>
                     </div>
+                    <div class="portal-exercises-list hidden" id="portal-ex-list-${routine.id}">
+                      ${(routine.exercises || []).map((exItem, exIdx) => {
+                        const exData = EXERCISES.find(e => e.id === exItem.exerciseId) || { name: exItem.exerciseId, equipment: 'Aparelho', frames: [] };
+                        const lastPerf = StorageService.getLastExercisePerformance(exItem.exerciseId);
+                        const thumbUrl = exData.frames && exData.frames[0] ? exData.frames[0] : '';
+                        const lastPerfStr = lastPerf && lastPerf.summaryWeight > 0
+                          ? ` • Última: ${lastPerf.summaryWeight}kg`
+                          : '';
 
-                    <p class="portal-living-desc">${routine.description}</p>
-
-                    <!-- Tags de Grupos Musculares Alvo -->
-                    <div class="portal-muscle-tags">
-                      ${meta.muscles.map(m => `
-                        <span class="portal-muscle-pill">
-                          <span class="portal-muscle-dot"></span>
-                          ${m}
-                        </span>
-                      `).join('')}
-                    </div>
-
-                    <!-- Metadados de Exercícios & Séries -->
-                    <div class="portal-meta-bar">
-                      <span>Volume Estimado: <strong class="portal-meta-highlight">${routine.exercises ? routine.exercises.length : 4} Exercícios</strong></span>
-                      <span>Séries: <strong class="portal-meta-highlight">${meta.setsEstimate}</strong></span>
-                    </div>
-
-                    <!-- Lista/Accordion de Exercícios do Portal com Opção de Troca Manual -->
-                    <div class="portal-exercises-preview" onclick="event.stopPropagation()">
-                      <div class="portal-exercises-preview-header">
-                        <span class="portal-ex-preview-title">MOVIMENTOS DO PORTAL (${routine.exercises ? routine.exercises.length : 0})</span>
-                        <button class="btn-toggle-portal-exercises" data-toggle-portal-ex="${routine.id}" type="button">
-                          <span>Personalizar</span>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                        </button>
-                      </div>
-                      <div class="portal-exercises-list hidden" id="portal-ex-list-${routine.id}">
-                        ${(routine.exercises || []).map((exItem, exIdx) => {
-                          const exData = EXERCISES.find(e => e.id === exItem.exerciseId) || { name: exItem.exerciseId, equipment: 'Aparelho' };
-                          return `
-                            <div class="portal-ex-item-row">
-                              <div class="portal-ex-item-info">
-                                <span class="portal-ex-item-num">${exIdx + 1}</span>
-                                <div class="portal-ex-item-text">
-                                  <span class="portal-ex-item-name">${exData.name}</span>
-                                  <span class="portal-ex-item-detail">${exItem.sets} séries • ${exItem.reps} reps • ${exData.equipment || ''}</span>
+                        return `
+                          <div class="portal-ex-item-row is-clickable" data-inspect-ex="${exItem.exerciseId}">
+                            <div class="portal-ex-item-info">
+                              ${thumbUrl ? `
+                                <div class="portal-ex-thumb-box" title="Ver GIF de ${exData.name}">
+                                  <img src="${thumbUrl}" alt="${exData.name}" loading="lazy" />
                                 </div>
+                              ` : `<span class="portal-ex-item-num">${exIdx + 1}</span>`}
+                              <div class="portal-ex-item-text">
+                                <span class="portal-ex-item-name">${exIdx + 1}. ${exData.name}</span>
+                                <span class="portal-ex-item-detail">
+                                  ${exItem.sets} séries • ${formatRepsMeta(exItem.reps)}${lastPerfStr}
+                                </span>
                               </div>
-                              <button class="btn-portal-swap-ex" data-portal-id="${routine.id}" data-old-ex-id="${exItem.exerciseId}" type="button" title="Trocar este exercício">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
-                                Trocar
-                              </button>
                             </div>
-                          `;
-                        }).join('')}
-                      </div>
+                            <button class="btn-portal-swap-ex" data-portal-id="${routine.id}" data-old-ex-id="${exItem.exerciseId}" type="button" title="Trocar este exercício">
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+                              Trocar
+                            </button>
+                          </div>
+                        `;
+                      }).join('')}
                     </div>
+                  </div>
 
-                    <!-- Botão de Iniciar Portal com Shimmer e Seta -->
+                  <div class="portal-actions-footer">
+                    <button class="portal-preview-btn" type="button" data-preview-routine="${routine.id}" title="Ver todos os GIFs deste portal sem iniciar o treino">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                      </svg>
+                      <span>Prévia</span>
+                    </button>
                     <button class="portal-launch-btn" type="button" data-start-routine="${routine.id}">
-                      <span>INICIAR ESTE PORTAL</span>
+                      <span>${isSuggested ? 'INICIAR HOJE' : 'INICIAR'}</span>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="5" y1="12" x2="19" y2="12"/>
                         <polyline points="12 5 19 12 12 19"/>
                       </svg>
                     </button>
                   </div>
-                `;
-              }).join('');
-            })()}
-          </div>
+                </div>
+              `;
+            };
+
+            const otherRoutines = currentRoutines.filter(r => r.id !== suggestedRoutine.id);
+
+            return `
+              <!-- Seletor de Divisão de Treino -->
+              <div class="split-selector-wrap">
+                <div class="split-selector-scroll">
+                  ${TRAINING_SPLITS.map(sp => `
+                    <button type="button" class="split-pill-btn ${sp.id === activeSplitId ? 'active' : ''}" data-select-split="${sp.id}">
+                      <span>${sp.shortName}</span>
+                    </button>
+                  `).join('')}
+                  <button type="button" class="split-pill-btn is-create-btn" id="btn-open-create-portal">
+                    <span>+ Criar Portal</span>
+                  </button>
+                </div>
+                <div class="split-info-banner">
+                  <span class="split-badge-tag">${activeSplit.badge}</span>
+                  <span class="split-desc-text">${activeSplit.description}</span>
+                </div>
+              </div>
+
+              <!-- Portal Sugerido para Hoje -->
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                ${renderPortalCard(suggestedRoutine, true)}
+              </div>
+
+              ${otherRoutines.length > 0 ? `
+                <div class="other-portals-section-header">
+                  <span>OUTROS PORTAIS DA DIVISÃO (${otherRoutines.length})</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                  ${otherRoutines.map(r => renderPortalCard(r, false)).join('')}
+                </div>
+              ` : ''}
+            `;
+          })()}
 
           <!-- Calendário Mensal de Treinos com Fotos (Estilo Stories Arquivados) -->
           <div id="treino-photo-calendar-mount" style="margin-top: 24px; text-align: left;"></div>
@@ -1294,6 +1317,42 @@ class AgiteMeApp {
           treinoCalMount.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
       }
+
+      // Seletor de Divisão de Treino (ABC Rotativo, ABC Clássico, Upper/Lower, Express)
+      container.querySelectorAll('[data-select-split]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const splitId = btn.getAttribute('data-select-split');
+          StorageService.setActiveSplitId(splitId);
+          sound.playTapSound();
+          this.renderTreinoView(container);
+        });
+      });
+
+      const createPortalBtn = container.querySelector('#btn-open-create-portal');
+      if (createPortalBtn) {
+        createPortalBtn.addEventListener('click', () => {
+          sound.playTapSound();
+          this.openCreateCustomPortalModal(container);
+        });
+      }
+
+      container.querySelectorAll('[data-delete-portal]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const portalId = btn.getAttribute('data-delete-portal');
+          const ok = await this.showCosmicConfirm({
+            title: 'EXCLUIR PORTAL',
+            message: 'Deseja remover este portal personalizado da sua divisão?',
+            confirmText: 'Excluir',
+            cancelText: 'Cancelar',
+            isDestructive: true
+          });
+          if (ok) {
+            StorageService.removeRoutine(portalId);
+            this.renderTreinoView(container);
+          }
+        });
+      });
 
       // Interação tátil no Totem 
       const totem = container.querySelector('#treino-portal-totem');
@@ -1330,6 +1389,32 @@ class AgiteMeApp {
           const portalId = btn.getAttribute('data-portal-id');
           const oldExId = btn.getAttribute('data-old-ex-id');
           this.openRoutineExerciseSwapModal(portalId, oldExId, container);
+        });
+      });
+
+      container.querySelectorAll('[data-inspect-ex]').forEach(row => {
+        row.addEventListener('click', (e) => {
+          if (e.target.closest('.btn-portal-swap-ex')) return;
+          e.stopPropagation();
+          const exId = row.getAttribute('data-inspect-ex');
+          const exObj = EXERCISES.find(ex => ex.id === exId);
+          if (exObj) {
+            sound.playTapSound();
+            this.openExerciseModal(exObj);
+          }
+        });
+      });
+
+      container.querySelectorAll('[data-preview-routine]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const rId = btn.getAttribute('data-preview-routine');
+          const userRoutines = StorageService.getRoutines();
+          const picked = userRoutines.find(r => r.id === rId);
+          if (picked) {
+            sound.playTapSound();
+            this.openPortalPreviewModal(picked, container);
+          }
         });
       });
 
@@ -1443,6 +1528,11 @@ class AgiteMeApp {
                       </span>
                       <span class="equip-tag">${displayEquip}</span>
                     </div>
+                    ${item.lastUsed ? `
+                      <div class="exercise-last-perf-pill">
+                        <span>Última vez: <strong>${item.lastUsed.summaryWeight} kg</strong> × <strong>${item.lastUsed.summaryReps} reps</strong></span>
+                      </div>
+                    ` : ''}
                   </div>
                 </div>
                 <div class="exercise-header-actions">
@@ -1529,19 +1619,35 @@ class AgiteMeApp {
                   </div>
                 `).join('')}
 
-                ${item.setsData.length > 1 ? `
-                  <button type="button" class="btn-copy-all-sets" data-copy-all-ex="${exIndex}">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                    </svg>
-                    <span>Copiar 1ª série para todas</span>
-                  </button>
-                ` : ''}
+                <div class="sets-footer-actions">
+                  ${item.setsData.length > 1 ? `
+                    <button type="button" class="btn-copy-all-sets" data-copy-all-ex="${exIndex}">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                      </svg>
+                      <span>Copiar 1ª p/ todas</span>
+                    </button>
+                  ` : ''}
+                  <div class="sets-adjust-group">
+                    ${item.setsData.length > 1 ? `
+                      <button type="button" class="btn-adjust-set" data-remove-set-ex="${exIndex}" title="Remover última série">− Série</button>
+                    ` : ''}
+                    <button type="button" class="btn-adjust-set is-add" data-add-set-ex="${exIndex}" title="Adicionar mais uma série">+ Série</button>
+                  </div>
+                </div>
               </div>
             </div>
           `;
     }).join('')}
+
+        <button type="button" class="btn-add-active-exercise" id="btn-add-active-exercise">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span>Adicionar Exercício Extra ao Treino</span>
+        </button>
       </div>
     `;
 
@@ -1770,6 +1876,45 @@ class AgiteMeApp {
       });
     });
 
+    // 2.3 Adicionar / Remover Série Dinamicamente
+    container.querySelectorAll('[data-add-set-ex]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const exIdx = parseInt(btn.getAttribute('data-add-set-ex'), 10);
+        const sets = this.activeSession.exercises[exIdx].setsData;
+        const last = sets[sets.length - 1] || { weight: 10, reps: '10' };
+        sets.push({
+          setNumber: sets.length + 1,
+          weight: last.weight,
+          reps: last.reps,
+          completed: false
+        });
+        StorageService.saveActiveSession(this.activeSession);
+        try { sound.playTapSound(); } catch (_) { }
+        this.renderTreinoView(container);
+      });
+    });
+
+    container.querySelectorAll('[data-remove-set-ex]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const exIdx = parseInt(btn.getAttribute('data-remove-set-ex'), 10);
+        const sets = this.activeSession.exercises[exIdx].setsData;
+        if (sets.length <= 1) return;
+        sets.pop();
+        StorageService.saveActiveSession(this.activeSession);
+        try { sound.playTapSound(); } catch (_) { }
+        this.renderTreinoView(container);
+      });
+    });
+
+    // 2.4 Adicionar Exercício Extra no Treino Ativo
+    const addExBtn = container.querySelector('#btn-add-active-exercise');
+    if (addExBtn) {
+      addExBtn.addEventListener('click', () => {
+        sound.playTapSound();
+        this.openAddActiveExerciseModal(container);
+      });
+    }
+
     // 3. Ver Guia / Demonstração do Exercício
     container.querySelectorAll('[data-view-exercise]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1855,7 +2000,7 @@ class AgiteMeApp {
   }
 
   // Modal de Personalização de Exercícios no Portal (Antes de Iniciar o Treino)
-  openRoutineExerciseSwapModal(portalId, oldExId, container) {
+  openRoutineExerciseSwapModal(portalId, oldExId, container, onAfterClose = null) {
     const modalContainer = document.querySelector('#modal-container');
     const currentEx = EXERCISES.find(e => e.id === oldExId) || { id: oldExId, name: oldExId, muscle: 'peito', muscleLabel: 'Geral', equipment: 'Equipamento' };
     const userRoutines = StorageService.getRoutines();
@@ -1929,7 +2074,10 @@ class AgiteMeApp {
       </div>
     `;
 
-    const close = () => { modalContainer.innerHTML = ''; };
+    const close = () => {
+      modalContainer.innerHTML = '';
+      if (typeof onAfterClose === 'function') onAfterClose();
+    };
     modalContainer.querySelector('#btn-close-swap-modal').addEventListener('click', close);
     modalContainer.querySelector('#btn-cancel-routine-swap').addEventListener('click', close);
     modalContainer.querySelector('#swap-exercise-overlay').addEventListener('click', (e) => {
@@ -1952,8 +2100,421 @@ class AgiteMeApp {
       StorageService.swapExerciseInRoutine(portalId, oldExId, selectedExId);
       sound.playCheckSound();
       if ('vibrate' in navigator) navigator.vibrate(60);
+      this.renderTreinoView(container);
+      close();
+    });
+  }
+
+  // Modal: Criar Novo Portal Personalizado na Divisão Ativa
+  openCreateCustomPortalModal(container) {
+    const modalContainer = document.querySelector('#modal-container');
+    const selectedIds = new Set();
+    let activeMuscle = 'todos';
+
+    modalContainer.innerHTML = `
+      <div class="modal-overlay" id="create-portal-overlay">
+        <div class="modal-sheet stone-panel custom-portal-modal-sheet">
+          <div class="modal-handle-bar"></div>
+          <div class="exercise-modal-header">
+            <div>
+              <span class="portal-code">NOVO PORTAL</span>
+              <h3 class="exercise-modal-title" style="margin-top: 4px;">Criar Ficha Personalizada</h3>
+            </div>
+            <button id="btn-close-create-portal" class="exercise-modal-close-btn" aria-label="Fechar">&times;</button>
+          </div>
+
+          <div class="checkin-fields-stack" style="margin-bottom: 12px;">
+            <label class="checkin-field-label" for="custom-portal-title">NOME DO TREINO</label>
+            <input type="text" id="custom-portal-title" class="checkin-input" placeholder="Ex: Portal Braços & Core" maxlength="45" />
+            <label class="checkin-field-label" for="custom-portal-focus">FOCO / OBSERVAÇÃO</label>
+            <input type="text" id="custom-portal-focus" class="checkin-input" placeholder="Ex: Bíceps, Tríceps e Abdômen" maxlength="55" />
+          </div>
+
+          <div class="checkin-field-label" style="margin-bottom: 6px;">
+            ESCOLHA OS EXERCÍCIOS (<span id="custom-portal-selected-count">0</span> selecionados)
+          </div>
+
+          <div class="custom-portal-muscle-filters" id="cp-muscle-filters">
+            ${MUSCLE_GROUPS.map(mg => `
+              <button type="button" class="filter-pill ${mg.id === 'todos' ? 'active' : ''}" data-cp-muscle="${mg.id}">
+                ${mg.label}
+              </button>
+            `).join('')}
+          </div>
+
+          <div class="custom-portal-ex-list" id="cp-ex-list"></div>
+
+          <button type="button" class="btn-enter-temple" id="btn-save-custom-portal" disabled style="margin-top: 12px; opacity: 0.5;">
+            CRIAR PORTAL
+          </button>
+        </div>
+      </div>
+    `;
+
+    const listEl = modalContainer.querySelector('#cp-ex-list');
+    const countEl = modalContainer.querySelector('#cp-portal-selected-count') || modalContainer.querySelector('#custom-portal-selected-count');
+    const saveBtn = modalContainer.querySelector('#btn-save-custom-portal');
+
+    const syncCountUI = () => {
+      if (countEl) countEl.textContent = String(selectedIds.size);
+      if (saveBtn) {
+        saveBtn.disabled = selectedIds.size === 0;
+        saveBtn.style.opacity = selectedIds.size === 0 ? '0.5' : '1';
+      }
+    };
+
+    const renderPickerList = () => {
+      const items = activeMuscle === 'todos' ? EXERCISES : EXERCISES.filter(e => e.muscle === activeMuscle);
+      listEl.innerHTML = items.map(ex => {
+        const isPicked = selectedIds.has(ex.id);
+        return `
+          <button type="button" class="cp-ex-pick-row ${isPicked ? 'is-selected' : ''}" data-cp-pick="${ex.id}">
+            <div class="cp-ex-pick-info">
+              <strong>${ex.name}</strong>
+              <small>${ex.muscleLabel} • ${ex.equipment}</small>
+            </div>
+            <span class="cp-ex-pick-check">${isPicked ? '✓' : '+'}</span>
+          </button>
+        `;
+      }).join('');
+
+      listEl.querySelectorAll('[data-cp-pick]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-cp-pick');
+          if (selectedIds.has(exId)) selectedIds.delete(exId);
+          else selectedIds.add(exId);
+          syncCountUI();
+          renderPickerList();
+        });
+      });
+    };
+
+    renderPickerList();
+
+    modalContainer.querySelectorAll('[data-cp-muscle]').forEach(pill => {
+      pill.addEventListener('click', () => {
+        modalContainer.querySelectorAll('[data-cp-muscle]').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        activeMuscle = pill.getAttribute('data-cp-muscle');
+        renderPickerList();
+      });
+    });
+
+    const close = () => { modalContainer.innerHTML = ''; };
+    modalContainer.querySelector('#btn-close-create-portal').addEventListener('click', close);
+    modalContainer.querySelector('#create-portal-overlay').addEventListener('click', (e) => {
+      if (e.target.id === 'create-portal-overlay') close();
+    });
+
+    saveBtn.addEventListener('click', () => {
+      if (selectedIds.size === 0) return;
+      const title = modalContainer.querySelector('#custom-portal-title')?.value.trim() || 'Portal Personalizado';
+      const focus = modalContainer.querySelector('#custom-portal-focus')?.value.trim() || 'Treino Customizado';
+      const pickedExObjs = Array.from(selectedIds).map(id => EXERCISES.find(e => e.id === id)).filter(Boolean);
+      const uniqueMuscles = [...new Set(pickedExObjs.map(e => {
+        const g = MUSCLE_GROUPS.find(m => m.id === e.muscle);
+        return g ? g.label : e.muscle;
+      }))].slice(0, 3);
+
+      const newRoutine = {
+        id: `custom-${Date.now()}`,
+        code: 'CUSTOM',
+        title,
+        focus,
+        durationMin: Math.max(20, selectedIds.size * 8),
+        subtitle: focus,
+        description: `Portal criado por você com ${selectedIds.size} exercícios selecionados.`,
+        color: '#e2e8f0',
+        muscles: uniqueMuscles.length > 0 ? uniqueMuscles : ['Personalizado'],
+        isCustom: true,
+        exercises: Array.from(selectedIds).map(id => ({
+          exerciseId: id,
+          sets: 3,
+          reps: '10 a 12',
+          restSec: 60,
+          defaultWeight: 10
+        }))
+      };
+
+      StorageService.addCustomRoutine(newRoutine);
+      sound.playCheckSound();
       close();
       this.renderTreinoView(container);
+    });
+  }
+
+  // Modal: Adicionar Exercício Extra Durante o Treino Ativo
+  openAddActiveExerciseModal(container) {
+    const modalContainer = document.querySelector('#modal-container');
+    let activeMuscle = 'todos';
+
+    modalContainer.innerHTML = `
+      <div class="modal-overlay" id="add-active-ex-overlay">
+        <div class="modal-sheet stone-panel custom-portal-modal-sheet">
+          <div class="modal-handle-bar"></div>
+          <div class="exercise-modal-header">
+            <div>
+              <span class="portal-code">TREINO ATIVO</span>
+              <h3 class="exercise-modal-title" style="margin-top: 4px;">Adicionar Exercício Extra</h3>
+            </div>
+            <button id="btn-close-add-active-ex" class="exercise-modal-close-btn" aria-label="Fechar">&times;</button>
+          </div>
+
+          <div class="custom-portal-muscle-filters">
+            ${MUSCLE_GROUPS.map(mg => `
+              <button type="button" class="filter-pill ${mg.id === 'todos' ? 'active' : ''}" data-aae-muscle="${mg.id}">
+                ${mg.label}
+              </button>
+            `).join('')}
+          </div>
+
+          <div class="custom-portal-ex-list" id="aae-ex-list"></div>
+        </div>
+      </div>
+    `;
+
+    const listEl = modalContainer.querySelector('#aae-ex-list');
+    const close = () => { modalContainer.innerHTML = ''; };
+
+    const renderList = () => {
+      const items = activeMuscle === 'todos' ? EXERCISES : EXERCISES.filter(e => e.muscle === activeMuscle);
+      listEl.innerHTML = items.map(ex => {
+        const lastPerf = StorageService.getLastExercisePerformance(ex.id);
+        return `
+          <button type="button" class="cp-ex-pick-row" data-aae-add="${ex.id}">
+            <div class="cp-ex-pick-info">
+              <strong>${ex.name}</strong>
+              <small>${ex.muscleLabel} • ${ex.equipment}${lastPerf ? ` • Última: ${lastPerf.summaryWeight}kg` : ''}</small>
+            </div>
+            <span class="cp-ex-pick-check">+</span>
+          </button>
+        `;
+      }).join('');
+
+      listEl.querySelectorAll('[data-aae-add]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const exId = btn.getAttribute('data-aae-add');
+          const lastPerf = StorageService.getLastExercisePerformance(exId);
+          const setsData = Array.from({ length: 3 }, (_, i) => {
+            const prevSet = lastPerf && (lastPerf.sets[i] || lastPerf.sets[lastPerf.sets.length - 1]);
+            return {
+              setNumber: i + 1,
+              weight: prevSet ? prevSet.weight : 10,
+              reps: prevSet ? String(prevSet.reps) : '10',
+              completed: false
+            };
+          });
+
+          this.activeSession.exercises.push({
+            exerciseId: exId,
+            restSec: 60,
+            lastUsed: lastPerf ? { summaryWeight: lastPerf.summaryWeight, summaryReps: lastPerf.summaryReps } : null,
+            setsData
+          });
+          StorageService.saveActiveSession(this.activeSession);
+          sound.playCheckSound();
+          close();
+          this.renderTreinoView(container);
+        });
+      });
+    };
+
+    renderList();
+
+    modalContainer.querySelectorAll('[data-aae-muscle]').forEach(pill => {
+      pill.addEventListener('click', () => {
+        modalContainer.querySelectorAll('[data-aae-muscle]').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        activeMuscle = pill.getAttribute('data-aae-muscle');
+        renderList();
+      });
+    });
+
+    modalContainer.querySelector('#btn-close-add-active-ex').addEventListener('click', close);
+    modalContainer.querySelector('#add-active-ex-overlay').addEventListener('click', (e) => {
+      if (e.target.id === 'add-active-ex-overlay') close();
+    });
+  }
+
+  // Modal: Prévia Visual Completa do Portal (GIFs animados de todos os exercícios sem iniciar cronômetro)
+  openPortalPreviewModal(routine, container) {
+    const modalContainer = document.querySelector('#modal-container');
+    // Recarrega a rotina atualizada caso o usuário tenha trocado algum exercício
+    const freshRoutine = StorageService.getRoutines().find(r => r.id === routine.id) || routine;
+    const totalSets = (freshRoutine.exercises || []).reduce((acc, ex) => acc + (ex.sets || 3), 0);
+
+    modalContainer.innerHTML = `
+      <div class="modal-overlay" id="portal-preview-overlay">
+        <div class="modal-sheet stone-panel portal-preview-modal-sheet">
+          <div class="modal-handle-bar"></div>
+
+          <div class="exercise-modal-header" style="margin-bottom: 10px;">
+            <div style="min-width: 0;">
+              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <span class="portal-code">PRÉVIA • ${freshRoutine.code}</span>
+                <span class="exercise-modal-equip-badge">${freshRoutine.exercises.length} exercícios • ~${totalSets} séries</span>
+              </div>
+              <h3 class="exercise-modal-title" style="margin-top: 4px;">${freshRoutine.title}</h3>
+              <div style="font-size: 0.74rem; color: var(--concrete-300); margin-top: 2px;">
+                ${freshRoutine.focus || 'Confira todos os movimentos antes de iniciar o relógio'}
+              </div>
+            </div>
+            <button id="btn-close-portal-preview" class="exercise-modal-close-btn" aria-label="Fechar prévia">&times;</button>
+          </div>
+
+          <div class="portal-preview-toolbar">
+            <span class="preview-phase-indicator" id="preview-global-phase-label">
+              <span class="phase-dot-live"></span>
+              <span id="preview-phase-text">Fase 1 • Posição Inicial</span>
+            </span>
+            <button type="button" class="frame-play-pause-btn is-looping" id="btn-toggle-preview-gifs">
+              <span class="loop-icon-glyph">⟳</span>
+              <span id="preview-play-text">GIF</span>
+            </button>
+          </div>
+
+          <div class="portal-preview-list" id="portal-preview-gif-list">
+            ${(freshRoutine.exercises || []).map((exItem, idx) => {
+              const exData = EXERCISES.find(e => e.id === exItem.exerciseId) || {
+                id: exItem.exerciseId,
+                name: exItem.exerciseId,
+                equipment: 'Equipamento',
+                muscleLabel: 'Músculo Alvo',
+                frames: []
+              };
+              const frame0 = exData.frames && exData.frames[0] ? exData.frames[0] : '';
+              const frame1 = exData.frames && exData.frames[1] ? exData.frames[1] : frame0;
+              const lastPerf = StorageService.getLastExercisePerformance(exItem.exerciseId);
+
+              return `
+                <div class="preview-exercise-card">
+                  <div class="preview-gif-box" data-preview-open-ex="${exData.id}" title="Toque para abrir guia passo a passo">
+                    ${frame0 ? `
+                      <img src="${frame0}" alt="${exData.name} - Início" class="preview-frame preview-frame-0" loading="lazy" />
+                      <img src="${frame1}" alt="${exData.name} - Contração" class="preview-frame preview-frame-1" loading="lazy" />
+                    ` : '<div class="preview-gif-empty">Sem imagem</div>'}
+                    <span class="preview-ex-order-badge">${idx + 1}</span>
+                  </div>
+
+                  <div class="preview-ex-details">
+                    <div class="preview-ex-header-line">
+                      <h4 class="preview-ex-name">${exData.name}</h4>
+                    </div>
+                    <div class="preview-ex-meta-tags">
+                      <span class="muscle-tag">${exData.muscleLabel}</span>
+                      <span class="equip-tag">${exData.equipment}</span>
+                    </div>
+                    <div class="preview-ex-volume-row">
+                      <span>${exItem.sets} séries • ${formatRepsMeta(exItem.reps)}</span>
+                      ${lastPerf && lastPerf.summaryWeight > 0 ? `<span class="preview-last-weight">Última: <strong>${lastPerf.summaryWeight} kg</strong></span>` : ''}
+                    </div>
+                    <div class="preview-ex-card-actions">
+                      <button type="button" class="preview-card-mini-btn" data-preview-open-ex="${exData.id}">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                        <span>Como fazer</span>
+                      </button>
+                      <button type="button" class="preview-card-mini-btn" data-preview-swap-old="${exItem.exerciseId}">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+                        <span>Trocar</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <div class="portal-preview-footer">
+            <button type="button" class="portal-preview-close-pill" id="btn-preview-back">
+              Só olhando
+            </button>
+            <button type="button" class="btn-enter-temple" id="btn-preview-start-now" style="flex: 2; padding: 12px;">
+              INICIAR ESTE PORTAL →
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const listEl = modalContainer.querySelector('#portal-preview-gif-list');
+    const phaseText = modalContainer.querySelector('#preview-phase-text');
+    const toggleBtn = modalContainer.querySelector('#btn-toggle-preview-gifs');
+    const playText = modalContainer.querySelector('#preview-play-text');
+    let isPeakPhase = false;
+    let isAnimating = true;
+    let animTimer = null;
+
+    const startGifSync = () => {
+      if (animTimer) clearInterval(animTimer);
+      isAnimating = true;
+      toggleBtn?.classList.add('is-looping');
+      if (playText) playText.textContent = 'GIFs';
+      animTimer = setInterval(() => {
+        isPeakPhase = !isPeakPhase;
+        listEl?.classList.toggle('is-phase-peak', isPeakPhase);
+        if (phaseText) {
+          phaseText.textContent = isPeakPhase ? 'Fase 2 • Contração Máxima' : 'Fase 1 • Posição Inicial';
+        }
+      }, 1350);
+    };
+
+    const stopGifSync = () => {
+      if (animTimer) clearInterval(animTimer);
+      animTimer = null;
+      isAnimating = false;
+      toggleBtn?.classList.remove('is-looping');
+      if (playText) playText.textContent = 'Pausado';
+    };
+
+    const close = () => {
+      stopGifSync();
+      modalContainer.innerHTML = '';
+    };
+
+    startGifSync();
+
+    toggleBtn?.addEventListener('click', () => {
+      if (isAnimating) stopGifSync();
+      else startGifSync();
+    });
+
+    modalContainer.querySelector('#btn-close-portal-preview').addEventListener('click', close);
+    modalContainer.querySelector('#btn-preview-back').addEventListener('click', close);
+    modalContainer.querySelector('#portal-preview-overlay').addEventListener('click', (e) => {
+      if (e.target.id === 'portal-preview-overlay') close();
+    });
+
+    modalContainer.querySelector('#btn-preview-start-now').addEventListener('click', () => {
+      close();
+      this.triggerWorkoutCountdown(freshRoutine, () => {
+        this.startWorkoutSession(freshRoutine);
+        this.renderTreinoView(container);
+      });
+    });
+
+    // Abrir detalhes de 1 exercício direto da prévia (retornando para a prévia ao fechar)
+    modalContainer.querySelectorAll('[data-preview-open-ex]').forEach(el => {
+      el.addEventListener('click', () => {
+        const exId = el.getAttribute('data-preview-open-ex');
+        const exObj = EXERCISES.find(e => e.id === exId);
+        if (exObj) {
+          stopGifSync();
+          this.openExerciseModal(exObj, () => {
+            this.openPortalPreviewModal(freshRoutine, container);
+          });
+        }
+      });
+    });
+
+    // Trocar exercício direto da prévia (retornando para a prévia atualizada)
+    modalContainer.querySelectorAll('[data-preview-swap-old]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const oldExId = btn.getAttribute('data-preview-swap-old');
+        stopGifSync();
+        this.openRoutineExerciseSwapModal(freshRoutine.id, oldExId, container, () => {
+          this.openPortalPreviewModal(freshRoutine, container);
+        });
+      });
     });
   }
 
@@ -2236,18 +2797,22 @@ class AgiteMeApp {
       elapsedSeconds: 0,
       isPaused: false,
       exercises: routine.exercises.map(item => {
+        const lastPerf = StorageService.getLastExercisePerformance(item.exerciseId);
+        const fallbackReps = typeof item.reps === 'string' ? item.reps.split(' ')[0] : item.reps;
         const setsData = [];
         for (let i = 0; i < item.sets; i++) {
+          const prevSet = lastPerf && (lastPerf.sets[i] || lastPerf.sets[lastPerf.sets.length - 1]);
           setsData.push({
             setNumber: i + 1,
-            weight: item.defaultWeight || 10,
-            reps: typeof item.reps === 'string' ? item.reps.split(' ')[0] : item.reps,
+            weight: prevSet ? prevSet.weight : (item.defaultWeight ?? 10),
+            reps: prevSet ? String(prevSet.reps) : String(fallbackReps || '10'),
             completed: false
           });
         }
         return {
           exerciseId: item.exerciseId,
-          restSec: item.restSec,
+          restSec: item.restSec || 60,
+          lastUsed: lastPerf ? { summaryWeight: lastPerf.summaryWeight, summaryReps: lastPerf.summaryReps } : null,
           setsData: setsData
         };
       })
@@ -3377,7 +3942,7 @@ class AgiteMeApp {
         totalSetsCount: re.sets,
         setsData: Array.from({ length: re.sets }, (_, i) => ({
           setNumber: i + 1,
-          weight: re.defaultWeight || 10,
+          weight: re.defaultWeight ?? 10,
           reps: re.reps || 10,
           completed: true
         }))
@@ -5360,7 +5925,7 @@ class AgiteMeApp {
     }
   }
 
-  openExerciseModal(exercise) {
+  openExerciseModal(exercise, onCloseCallback = null) {
     const modalContainer = document.querySelector('#modal-container');
     const frames = exercise.frames || [];
     const frame0 = frames[0] || '';
@@ -5614,6 +6179,7 @@ class AgiteMeApp {
     const close = () => {
       if (progressTimer) clearInterval(progressTimer);
       modalContainer.innerHTML = '';
+      if (typeof onCloseCallback === 'function') onCloseCallback();
     };
 
     modalContainer.querySelector('#btn-close-ex-modal').addEventListener('click', close);

@@ -1,4 +1,4 @@
-import { DEFAULT_ROUTINES } from '../data/routines.js';
+import { DEFAULT_ROUTINES, TRAINING_SPLITS, getSplitById } from '../data/routines.js';
 
 const STORAGE_KEYS = {
   PROFILE: 'agtm_profile',
@@ -146,25 +146,58 @@ export const StorageService = {
     if (slug === 'joao') localStorage.removeItem(STORAGE_KEYS.ACTIVE_SESSION);
   },
 
-  // Gerenciamento de Rotinas / Portais Dinâmicos
-  getRoutines() {
+  // Gerenciamento de Divisões & Portais Dinâmicos
+  getActiveSplitId() {
     const slug = this.getCurrentUserSlug();
-    const key = `${STORAGE_KEYS.ROUTINES}_${slug}`;
+    return localStorage.getItem(`agtm_split_${slug}`) || 'abc_rotativo';
+  },
+
+  setActiveSplitId(splitId) {
+    const slug = this.getCurrentUserSlug();
+    const valid = getSplitById(splitId).id;
+    localStorage.setItem(`agtm_split_${slug}`, valid);
+    return valid;
+  },
+
+  getRoutines(splitId = this.getActiveSplitId()) {
+    const slug = this.getCurrentUserSlug();
+    const splitKey = `${STORAGE_KEYS.ROUTINES}_${slug}_${splitId}`;
     try {
-      const data = localStorage.getItem(key);
+      const data = localStorage.getItem(splitKey);
       if (data) {
         return JSON.parse(data);
       }
+      if (splitId === 'abc_classico') {
+        const legacy = localStorage.getItem(`${STORAGE_KEYS.ROUTINES}_${slug}`);
+        if (legacy) return JSON.parse(legacy);
+      }
     } catch {}
-    return JSON.parse(JSON.stringify(DEFAULT_ROUTINES));
+    const split = getSplitById(splitId);
+    return JSON.parse(JSON.stringify(split.routines || DEFAULT_ROUTINES));
   },
 
-  saveRoutines(routines) {
+  saveRoutines(routines, splitId = this.getActiveSplitId()) {
     const slug = this.getCurrentUserSlug();
-    const key = `${STORAGE_KEYS.ROUTINES}_${slug}`;
+    const splitKey = `${STORAGE_KEYS.ROUTINES}_${slug}_${splitId}`;
     try {
-      localStorage.setItem(key, JSON.stringify(routines));
+      localStorage.setItem(splitKey, JSON.stringify(routines));
+      if (splitId === 'abc_classico') {
+        localStorage.setItem(`${STORAGE_KEYS.ROUTINES}_${slug}`, JSON.stringify(routines));
+      }
     } catch {}
+  },
+
+  addCustomRoutine(newRoutine) {
+    const routines = this.getRoutines();
+    routines.push(newRoutine);
+    this.saveRoutines(routines);
+    return routines;
+  },
+
+  removeRoutine(routineId) {
+    const routines = this.getRoutines().filter(r => r.id !== routineId);
+    this.saveRoutines(routines);
+    return routines;
   },
 
   swapExerciseInRoutine(routineId, oldExId, newExId) {
@@ -174,7 +207,6 @@ export const StorageService = {
 
     const targetIndex = routine.exercises.findIndex(e => e.exerciseId === oldExId);
     if (targetIndex === -1) {
-      // Tenta encontrar por matching flexível
       const flexIdx = routine.exercises.findIndex(e => e.exerciseId?.toLowerCase().includes(oldExId.toLowerCase()) || oldExId.toLowerCase().includes(e.exerciseId?.toLowerCase()));
       if (flexIdx !== -1) {
         routine.exercises[flexIdx].exerciseId = newExId;
@@ -189,11 +221,40 @@ export const StorageService = {
     return routine;
   },
 
-  resetRoutines() {
+  resetRoutines(splitId = this.getActiveSplitId()) {
     const slug = this.getCurrentUserSlug();
-    const key = `${STORAGE_KEYS.ROUTINES}_${slug}`;
-    localStorage.removeItem(key);
-    return JSON.parse(JSON.stringify(DEFAULT_ROUTINES));
+    const splitKey = `${STORAGE_KEYS.ROUTINES}_${slug}_${splitId}`;
+    localStorage.removeItem(splitKey);
+    if (splitId === 'abc_classico') {
+      localStorage.removeItem(`${STORAGE_KEYS.ROUTINES}_${slug}`);
+    }
+    const split = getSplitById(splitId);
+    return JSON.parse(JSON.stringify(split.routines || DEFAULT_ROUTINES));
+  },
+
+  // Busca a última carga e repetições reais executadas em qualquer sessão anterior
+  getLastExercisePerformance(exerciseId) {
+    const history = this.getHistory();
+    if (!history || history.length === 0) return null;
+
+    for (const workout of history) {
+      if (!Array.isArray(workout.exercises)) continue;
+      const ex = workout.exercises.find(e => e.exerciseId === exerciseId);
+      if (!ex || !Array.isArray(ex.setsData) || ex.setsData.length === 0) continue;
+
+      const completedSets = ex.setsData.filter(s => s.completed);
+      const refSets = completedSets.length > 0 ? completedSets : ex.setsData;
+      const lastSet = refSets[refSets.length - 1];
+      if (!lastSet) continue;
+
+      return {
+        date: workout.date,
+        sets: refSets,
+        summaryWeight: lastSet.weight,
+        summaryReps: lastSet.reps
+      };
+    }
+    return null;
   },
 
   getChatHistory() {
