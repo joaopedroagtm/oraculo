@@ -33,14 +33,21 @@ export const GeminiService = {
       ? apiKey.trim()
       : (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY ? import.meta.env.VITE_GEMINI_API_KEY.trim() : '');
 
-    // Se houver API key do Gemini configurada, chama a API
-    if (effectiveKey) {
+    const sameMuscleAlternatives = EXERCISES.filter(e => e.muscle === exercise.muscle && e.id !== exercise.id);
+
+    // Se houver API key do Gemini configurada, chama a API guiada pelo catálogo real (para ter GIF e ficha completa)
+    if (effectiveKey && sameMuscleAlternatives.length > 0) {
       try {
-        const prompt = `Você é o Oráculo Personal Trainer do app AGiTe-Me! (estética etérea anos 90 e templo de ferro).
-O aluno iniciante precisa substituir o exercício: "${exercise.name}" (foco: ${exercise.muscleLabel}, equipamento: ${exercise.equipment}).
-Perfil do aluno: ${userProfile.age} anos, ${userProfile.weight}kg, foco: ${userProfile.goal}.
-Sugira UM exercício alternativo que trabalhe o mesmo músculo, explique a execução em 2 frases e dê uma breve palavra de incentivo cósmico.
-Responda em formato JSON com os campos: alternativeName, equipment, reason, instructions, oracleQuote.`;
+        const optionsSummary = sameMuscleAlternatives.map(e => `${e.id} | ${e.name} (${e.equipment})`).join('; ');
+        const prompt = `Você é personal trainer do app AGiTe-Me!.
+O aluno iniciante quer substituir "${exercise.name}" (grupo: ${exercise.muscleLabel}, equipamento: ${exercise.equipment}).
+Perfil: ${userProfile.age || 24} anos, ${userProfile.weight || 75}kg, objetivo: ${userProfile.goal || 'hipertrofia'}.
+Escolha A MELHOR alternativa desta lista real (use exatamente o id e name dela): [${optionsSummary}].
+Responda APENAS JSON com:
+- alternativeId: id exato da lista
+- alternativeName: name exato da lista
+- equipment: equipamento do exercício
+- reason: explicação curta e prática em NO MÁXIMO 1 frase direta (máx 110 caracteres) de por que é uma ótima troca.`;
 
         const result = await callGeminiApi(effectiveKey, {
           contents: [{ parts: [{ text: prompt }] }],
@@ -48,7 +55,18 @@ Responda em formato JSON com os campos: alternativeName, equipment, reason, inst
         });
 
         if (result?.text) {
-          return JSON.parse(result.text);
+          const parsed = JSON.parse(result.text);
+          const matched = sameMuscleAlternatives.find(
+            e => e.id === parsed.alternativeId || e.name.toLowerCase() === String(parsed.alternativeName || '').toLowerCase()
+          );
+          if (matched) {
+            return {
+              alternativeId: matched.id,
+              alternativeName: matched.name,
+              equipment: matched.equipment,
+              reason: parsed.reason || matched.goldTip
+            };
+          }
         }
       } catch (err) {
         console.warn('Fallback para motor local do oráculo:', err);
@@ -56,17 +74,15 @@ Responda em formato JSON com os campos: alternativeName, equipment, reason, inst
     }
 
     // Motor Local Autônomo (Offline / Sem Chave)
-    const sameMuscleAlternatives = EXERCISES.filter(e => e.muscle === exercise.muscle && e.id !== exercise.id);
     const chosen = sameMuscleAlternatives.length > 0
-      ? sameMuscleAlternatives[Math.floor(Math.random() * sameMuscleAlternatives.length)]
-      : { name: 'Flexão de Braços / Prancha com Toque', equipment: 'Peso Corporal', steps: ['Apoie as mãos no chão e faça o movimento com cadência.'], goldTip: 'Controle a respiração.' };
+      ? sameMuscleAlternatives[0]
+      : { id: exercise.id, name: 'Flexão de Braços / Variação Livre', equipment: 'Peso Corporal', goldTip: 'Mantenha cadência controlada na descida.' };
 
     return {
+      alternativeId: chosen.id,
       alternativeName: chosen.name,
       equipment: chosen.equipment,
-      reason: `Trabalha exatamente a mesma cadeia biomecânica de ${exercise.muscleLabel} com carga ajustável.`,
-      instructions: chosen.steps ? chosen.steps[0] : 'Mantenha a postura alinhada e controle o movimento.',
-      oracleQuote: '“O templo não depende do aparelho, e sim da conexão da sua mente com a fibra muscular.”'
+      reason: `Ativa ${exercise.muscleLabel} com ótimo conforto articular e carga ajustável em ${chosen.equipment}.`
     };
   },
 

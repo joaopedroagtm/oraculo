@@ -1999,109 +1999,256 @@ class AgiteMeApp {
     });
   }
 
+  // Componente visual compartilhado de Substituição de Exercícios (com Prévia GIF Ao Vivo + Tags Coloridas)
+  renderVisualSwapPanel({
+    contentEl,
+    currentEx,
+    alternatives,
+    initialSelectedId,
+    aiSuggestion = null,
+    confirmLabel = 'CONFIRMAR TROCA',
+    onConfirm,
+    onCancel
+  }) {
+    if (!contentEl) return () => {};
+
+    let selectedEx = alternatives.find(e => e.id === initialSelectedId) || alternatives[0] || currentEx;
+    let isPeakFrame = false;
+    let isLoopPlaying = true;
+    let gifTimer = null;
+
+    const currentThumb = (currentEx.frames && currentEx.frames[0]) ? currentEx.frames[0] : '';
+
+    const buildSpotlightHTML = (ex) => {
+      const f0 = (ex.frames && ex.frames[0]) ? ex.frames[0] : '';
+      const f1 = (ex.frames && ex.frames[1]) ? ex.frames[1] : f0;
+      const isAiPick = Boolean(aiSuggestion && (ex.id === aiSuggestion.alternativeId || ex.name.toLowerCase() === String(aiSuggestion.alternativeName || '').toLowerCase()));
+      const lastPerf = StorageService.getLastExercisePerformance(ex.id);
+      const tipText = isAiPick && aiSuggestion.reason ? aiSuggestion.reason : (ex.goldTip || ex.targetGroup || '');
+
+      return `
+        <div class="swap-spotlight-gif-box ${isPeakFrame ? 'is-peak' : ''}" id="swap-spot-gif-stage" title="Toque para pausar/alternar GIF">
+          ${f0 ? `
+            <img src="${f0}" alt="${ex.name} - Início" class="swap-spot-frame swap-spot-frame-0" />
+            <img src="${f1}" alt="${ex.name} - Contração" class="swap-spot-frame swap-spot-frame-1" />
+          ` : '<div class="preview-gif-empty">Sem GIF</div>'}
+          <span class="swap-spot-phase-tag" id="swap-spot-phase-tag">${isPeakFrame ? 'Fase 2' : 'Fase 1'}</span>
+        </div>
+
+        <div class="swap-spotlight-info">
+          <div class="swap-spotlight-badge-row">
+            ${isAiPick ? `
+              <span class="swap-role-pill is-ai">✦ Sugestão do Oráculo</span>
+            ` : `
+              <span class="swap-role-pill is-selected">✓ Prévia Selecionada</span>
+            `}
+          </div>
+          <h4 class="swap-spotlight-title">${ex.name}</h4>
+          <div class="swap-spotlight-chips">
+            <span class="swap-chip is-equip">${ex.equipment}</span>
+            <span class="swap-chip is-muscle">${ex.muscleLabel}</span>
+            ${lastPerf && lastPerf.summaryWeight > 0 ? `<span class="swap-chip is-last">Última: ${lastPerf.summaryWeight}kg</span>` : ''}
+          </div>
+          ${tipText ? `<p class="swap-spotlight-tip">${tipText}</p>` : ''}
+        </div>
+      `;
+    };
+
+    contentEl.innerHTML = `
+      <!-- Exercício Atual (Compacto para deixar espaço aos GIFs) -->
+      <div class="swap-current-strip">
+        ${currentThumb ? `<img src="${currentThumb}" alt="${currentEx.name}" class="swap-current-thumb" />` : ''}
+        <div class="swap-current-meta">
+          <span class="swap-current-tag">SAINDO</span>
+          <strong class="swap-current-name">${currentEx.name}</strong>
+          <small class="swap-current-equip">${currentEx.equipment || ''}</small>
+        </div>
+      </div>
+
+      <!-- Palco Hero de Prévia GIF ao Vivo da Opção Selecionada -->
+      <div class="swap-live-spotlight" id="swap-live-spotlight">
+        ${buildSpotlightHTML(selectedEx)}
+      </div>
+
+      <!-- Opções para Explorar e Comparar -->
+      <div class="swap-alternatives-section">
+        <div class="swap-alternatives-title">
+          <span>TOQUE PARA VER O GIF ANTES DE TROCAR (${alternatives.length})</span>
+        </div>
+        <div class="swap-catalog-grid" id="swap-catalog-options">
+          ${alternatives.map(alt => {
+            const thumb = (alt.frames && alt.frames[0]) ? alt.frames[0] : '';
+            const isSel = alt.id === selectedEx.id;
+            const isAi = Boolean(aiSuggestion && (alt.id === aiSuggestion.alternativeId || alt.name.toLowerCase() === String(aiSuggestion.alternativeName || '').toLowerCase()));
+            const lastPerf = StorageService.getLastExercisePerformance(alt.id);
+            return `
+              <button type="button" class="swap-option-card ${isSel ? 'selected' : ''}" data-alt-id="${alt.id}">
+                <div class="swap-option-thumb-wrap">
+                  ${thumb ? `<img src="${thumb}" alt="${alt.name}" class="swap-option-thumb" loading="lazy" />` : '<span class="swap-thumb-fallback">•</span>'}
+                </div>
+                <div class="swap-option-details">
+                  <div class="swap-option-name-row">
+                    <span class="swap-option-name">${alt.name}</span>
+                    ${isAi ? '<span class="swap-mini-ai-tag">IA</span>' : ''}
+                  </div>
+                  <div class="swap-option-chips">
+                    <span class="swap-mini-chip is-equip">${alt.equipment}</span>
+                    ${lastPerf && lastPerf.summaryWeight > 0 ? `<span class="swap-mini-chip is-last">${lastPerf.summaryWeight}kg</span>` : `<span class="swap-mini-chip is-muscle">${alt.muscleLabel}</span>`}
+                  </div>
+                </div>
+                <div class="swap-option-radio"></div>
+              </button>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
+      <div class="swap-modal-actions">
+        <button type="button" class="btn-enter-temple" id="btn-confirm-visual-swap" style="padding: 12px; font-size: 0.84rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <span id="swap-confirm-btn-text">${confirmLabel}</span>
+        </button>
+        <button type="button" class="btn-exercise-guide" id="btn-cancel-visual-swap" style="justify-content: center; padding: 10px;">
+          Manter Exercício Atual
+        </button>
+      </div>
+    `;
+
+    const spotlightEl = contentEl.querySelector('#swap-live-spotlight');
+
+    const startSpotlightGif = () => {
+      if (gifTimer) clearInterval(gifTimer);
+      isLoopPlaying = true;
+      gifTimer = setInterval(() => {
+        isPeakFrame = !isPeakFrame;
+        const stage = contentEl.querySelector('#swap-spot-gif-stage');
+        const tag = contentEl.querySelector('#swap-spot-phase-tag');
+        if (stage) stage.classList.toggle('is-peak', isPeakFrame);
+        if (tag) tag.textContent = isPeakFrame ? 'Fase 2' : 'Fase 1';
+      }, 1300);
+    };
+
+    const bindSpotlightTap = () => {
+      const stage = contentEl.querySelector('#swap-spot-gif-stage');
+      if (!stage) return;
+      stage.addEventListener('click', () => {
+        if (isLoopPlaying) {
+          if (gifTimer) clearInterval(gifTimer);
+          gifTimer = null;
+          isLoopPlaying = false;
+        }
+        isPeakFrame = !isPeakFrame;
+        stage.classList.toggle('is-peak', isPeakFrame);
+        const tag = contentEl.querySelector('#swap-spot-phase-tag');
+        if (tag) tag.textContent = isPeakFrame ? 'Fase 2 (Pausado)' : 'Fase 1 (Pausado)';
+      });
+    };
+
+    startSpotlightGif();
+    bindSpotlightTap();
+
+    contentEl.querySelectorAll('.swap-option-card').forEach(card => {
+      card.addEventListener('click', () => {
+        sound.playTapSound();
+        contentEl.querySelectorAll('.swap-option-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        const altId = card.getAttribute('data-alt-id');
+        const found = alternatives.find(e => e.id === altId);
+        if (found) {
+          selectedEx = found;
+          isPeakFrame = false;
+          if (spotlightEl) {
+            spotlightEl.innerHTML = buildSpotlightHTML(selectedEx);
+            bindSpotlightTap();
+            if (!isLoopPlaying) startSpotlightGif();
+          }
+        }
+      });
+    });
+
+    const stopLoop = () => {
+      if (gifTimer) clearInterval(gifTimer);
+      gifTimer = null;
+    };
+
+    contentEl.querySelector('#btn-cancel-visual-swap')?.addEventListener('click', () => {
+      stopLoop();
+      if (typeof onCancel === 'function') onCancel();
+    });
+
+    contentEl.querySelector('#btn-confirm-visual-swap')?.addEventListener('click', () => {
+      stopLoop();
+      if (typeof onConfirm === 'function') onConfirm(selectedEx);
+    });
+
+    return stopLoop;
+  }
+
   // Modal de Personalização de Exercícios no Portal (Antes de Iniciar o Treino)
   openRoutineExerciseSwapModal(portalId, oldExId, container, onAfterClose = null) {
     const modalContainer = document.querySelector('#modal-container');
-    const currentEx = EXERCISES.find(e => e.id === oldExId) || { id: oldExId, name: oldExId, muscle: 'peito', muscleLabel: 'Geral', equipment: 'Equipamento' };
+    const currentEx = EXERCISES.find(e => e.id === oldExId) || { id: oldExId, name: oldExId, muscle: 'peito', muscleLabel: 'Geral', equipment: 'Equipamento', frames: [] };
     const userRoutines = StorageService.getRoutines();
     const routine = userRoutines.find(r => r.id === portalId);
     const routineTitle = routine ? routine.title : 'Portal';
 
-    // Alternativas do mesmo grupo muscular
     const alternatives = EXERCISES.filter(e => e.muscle === currentEx.muscle && e.id !== currentEx.id);
-    let selectedExId = alternatives.length > 0 ? alternatives[0].id : '';
 
     modalContainer.innerHTML = `
       <div class="modal-overlay" id="swap-exercise-overlay">
         <div class="swap-modal-sheet">
           <div class="modal-handle-bar"></div>
 
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <div style="width: 28px; height: 28px; border-radius: 8px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center;">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <div class="swap-modal-header">
+            <div class="swap-modal-title-group">
+              <div class="swap-modal-icon-badge">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
                 </svg>
               </div>
               <div>
-                <h3 style="font-family: var(--font-hud); font-size: 0.85rem; color: #fff; letter-spacing: 1.2px; text-transform: uppercase; margin: 0;">
-                  PERSONALIZAR MOVIMENTO
-                </h3>
-                <small style="color: var(--concrete-300); font-size: 0.68rem;">${routineTitle}</small>
+                <h3 class="swap-modal-heading">TROCAR EXERCÍCIO</h3>
+                <small class="swap-modal-sub">${routineTitle}</small>
               </div>
             </div>
-            <button id="btn-close-swap-modal" style="background: none; border: none; color: var(--concrete-400); font-size: 1.6rem; cursor: pointer;">&times;</button>
+            <button id="btn-close-swap-modal" class="exercise-modal-close-btn" aria-label="Fechar">&times;</button>
           </div>
 
-          <div class="swap-card-comparison" style="margin-top: 4px;">
-            <div class="swap-box-current">
-              <span class="swap-label-tag">MOVIMENTO ATUAL</span>
-              <div class="swap-item-name">${currentEx.name}</div>
-              <div class="swap-item-equip">Aparelho: ${currentEx.equipment} • Foco: ${currentEx.muscleLabel}</div>
-            </div>
-          </div>
-
-          <div class="swap-alternatives-section">
-            <div class="swap-alternatives-title">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
-              SELECIONE A ALTERNATIVA (${alternatives.length} DISPONÍVEIS)
-            </div>
-            <div class="swap-catalog-grid" id="swap-catalog-options">
-              ${alternatives.map((alt, idx) => `
-                <div class="swap-option-card ${idx === 0 ? 'selected' : ''}" data-alt-id="${alt.id}">
-                  <div class="swap-option-radio"></div>
-                  <div class="swap-option-details">
-                    <span class="swap-option-name">${alt.name}</span>
-                    <span class="swap-option-equip">${alt.equipment} • ${alt.targetGroup}</span>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-
-          <div class="swap-modal-actions">
-            <button class="btn-enter-temple" id="btn-confirm-routine-swap" style="padding: 12px; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-              CONFIRMAR ALTERAÇÃO NO PORTAL
-            </button>
-            <button class="btn-exercise-guide" id="btn-cancel-routine-swap" style="justify-content: center; padding: 10px;">
-              Manter Exercício Atual
-            </button>
-          </div>
+          <div id="swap-modal-content"></div>
         </div>
       </div>
     `;
 
+    let stopGif = () => {};
     const close = () => {
+      stopGif();
       modalContainer.innerHTML = '';
       if (typeof onAfterClose === 'function') onAfterClose();
     };
+
+    const contentEl = modalContainer.querySelector('#swap-modal-content');
+    stopGif = this.renderVisualSwapPanel({
+      contentEl,
+      currentEx,
+      alternatives,
+      initialSelectedId: alternatives[0]?.id,
+      confirmLabel: 'CONFIRMAR TROCA NO PORTAL',
+      onCancel: close,
+      onConfirm: (selectedEx) => {
+        if (!selectedEx) return;
+        StorageService.swapExerciseInRoutine(portalId, oldExId, selectedEx.id);
+        sound.playCheckSound();
+        if ('vibrate' in navigator) navigator.vibrate(60);
+        this.renderTreinoView(container);
+        close();
+      }
+    });
+
     modalContainer.querySelector('#btn-close-swap-modal').addEventListener('click', close);
-    modalContainer.querySelector('#btn-cancel-routine-swap').addEventListener('click', close);
     modalContainer.querySelector('#swap-exercise-overlay').addEventListener('click', (e) => {
       if (e.target.id === 'swap-exercise-overlay') close();
-    });
-
-    // Seleção de cards
-    modalContainer.querySelectorAll('.swap-option-card').forEach(card => {
-      card.addEventListener('click', () => {
-        sound.playTapSound();
-        modalContainer.querySelectorAll('.swap-option-card').forEach(c => c.classList.remove('selected'));
-        card.classList.add('selected');
-        selectedExId = card.getAttribute('data-alt-id');
-      });
-    });
-
-    // Confirmação
-    modalContainer.querySelector('#btn-confirm-routine-swap').addEventListener('click', () => {
-      if (!selectedExId) return;
-      StorageService.swapExerciseInRoutine(portalId, oldExId, selectedExId);
-      sound.playCheckSound();
-      if ('vibrate' in navigator) navigator.vibrate(60);
-      this.renderTreinoView(container);
-      close();
     });
   }
 
@@ -2518,161 +2665,105 @@ class AgiteMeApp {
     });
   }
 
-  // Modal Interativo de Substituição com IA Gemini + Catálogo Manual
+  // Modal Interativo de Substituição com IA Gemini + Prévia GIF Ao Vivo
   openExerciseSwapModal(exIdx, currentExItem, exObj, container) {
     const modalContainer = document.querySelector('#modal-container');
     const currentName = currentExItem.exerciseName || exObj.name;
-    const currentEquip = currentExItem.exerciseEquipment || exObj.equipment;
 
-    // Renderiza o modal em estado inicial de carregamento
     modalContainer.innerHTML = `
       <div class="modal-overlay" id="swap-exercise-overlay">
         <div class="swap-modal-sheet">
           <div class="modal-handle-bar"></div>
 
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <div style="width: 28px; height: 28px; border-radius: 8px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center;">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <div class="swap-modal-header">
+            <div class="swap-modal-title-group">
+              <div class="swap-modal-icon-badge is-ai">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
                 </svg>
               </div>
               <div>
-                <h3 style="font-family: var(--font-hud); font-size: 0.85rem; color: #fff; letter-spacing: 1.2px; text-transform: uppercase; margin: 0;">
-                  ADAPTAÇÃO DE MOVIMENTO
-                </h3>
-                <small style="color: var(--concrete-300); font-size: 0.68rem;">Oráculo IA + Catálogo de Biomecânica</small>
+                <h3 class="swap-modal-heading">TROCAR EXERCÍCIO</h3>
+                <small class="swap-modal-sub">Oráculo IA + Prévia com GIF</small>
               </div>
             </div>
-            <button id="btn-close-swap-modal" style="background: none; border: none; color: var(--concrete-400); font-size: 1.6rem; cursor: pointer;">&times;</button>
+            <button id="btn-close-swap-modal" class="exercise-modal-close-btn" aria-label="Fechar">&times;</button>
           </div>
 
           <div id="swap-modal-content">
             <div class="swap-modal-loading">
               <div class="swap-orb-pulse"></div>
-              <div style="font-size: 0.88rem; color: #ffffff; font-weight: 600;">Sintonizando frequências do templo...</div>
-              <div style="font-size: 0.74rem; color: var(--concrete-300);">Calculando alternativas biomecânicas para "${currentName}"</div>
+              <div style="font-size: 0.88rem; color: #ffffff; font-weight: 600;">Sintonizando alternativas...</div>
+              <div style="font-size: 0.74rem; color: var(--concrete-300);">Buscando movimentos equivalentes para "${currentName}"</div>
             </div>
           </div>
         </div>
       </div>
     `;
 
-    const close = () => { modalContainer.innerHTML = ''; };
+    let stopGif = () => {};
+    let isClosed = false;
+    const close = () => {
+      isClosed = true;
+      stopGif();
+      modalContainer.innerHTML = '';
+    };
+
     modalContainer.querySelector('#btn-close-swap-modal').addEventListener('click', close);
     modalContainer.querySelector('#swap-exercise-overlay').addEventListener('click', (e) => {
       if (e.target.id === 'swap-exercise-overlay') close();
     });
 
-    // Executa a consulta ao GeminiService de forma assíncrona
     GeminiService.substituteExercise(exObj, this.profile, this.profile.geminiApiKey).then(suggestion => {
+      if (isClosed) return;
       const contentEl = modalContainer.querySelector('#swap-modal-content');
       if (!contentEl) return;
 
       const alternatives = EXERCISES.filter(e => e.muscle === exObj.muscle && e.id !== exObj.id);
-      let selectedEx = EXERCISES.find(e => e.name.toLowerCase() === suggestion.alternativeName.toLowerCase()) || alternatives[0] || exObj;
+      const aiMatched = alternatives.find(
+        e => e.id === suggestion.alternativeId || e.name.toLowerCase() === String(suggestion.alternativeName || '').toLowerCase()
+      ) || alternatives[0] || exObj;
 
-      contentEl.innerHTML = `
-        <div class="swap-card-comparison">
-          <div class="swap-box-current">
-            <span class="swap-label-tag">EXERCÍCIO ATUAL</span>
-            <div class="swap-item-name">${currentName}</div>
-            <div class="swap-item-equip">Aparelho: ${currentEquip}</div>
-          </div>
+      // Coloca a sugestão do Oráculo no topo da lista para fácil acesso
+      const orderedAlternatives = [
+        aiMatched,
+        ...alternatives.filter(a => a.id !== aiMatched.id)
+      ];
 
-          <div class="swap-box-suggested swap-option-card selected" id="ai-suggested-card" data-alt-id="${selectedEx.id}">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-              <span class="swap-label-tag" style="display: inline-flex; align-items: center; gap: 4px;">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                </svg>
-                SUGESTÃO PRINCIPAL DO ORÁCULO
-              </span>
-              <div class="swap-option-radio"></div>
-            </div>
-            <div class="swap-item-name">${suggestion.alternativeName}</div>
-            <div class="swap-item-equip">Aparelho / Acessório: ${suggestion.equipment}</div>
-          </div>
-        </div>
+      stopGif = this.renderVisualSwapPanel({
+        contentEl,
+        currentEx: { ...exObj, name: currentName, equipment: currentExItem.exerciseEquipment || exObj.equipment },
+        alternatives: orderedAlternatives,
+        initialSelectedId: aiMatched.id,
+        aiSuggestion: { ...suggestion, alternativeId: aiMatched.id },
+        confirmLabel: 'CONFIRMAR TROCA NO TREINO',
+        onCancel: close,
+        onConfirm: (selectedEx) => {
+          if (!selectedEx) return;
+          const oldExId = currentExItem.exerciseId || exObj.id;
+          currentExItem.exerciseId = selectedEx.id;
+          currentExItem.exerciseName = selectedEx.name;
+          currentExItem.exerciseEquipment = selectedEx.equipment;
+          StorageService.saveActiveSession(this.activeSession);
 
-        <div class="swap-reason-box">
-          <div class="swap-reason-title" style="display: flex; align-items: center; gap: 5px;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2a4.5 4.5 0 0 0-4.5 4.5c0 1.5.7 2.8 1.8 3.7C8.6 11.2 8 12.5 8 14v1a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-1c0-1.5-.6-2.8-1.3-3.8 1.1-.9 1.8-2.2 1.8-3.7A4.5 4.5 0 0 0 12 2z"/>
-            </svg>
-            ANÁLISE BIOMECÂNICA:
-          </div>
-          <div class="swap-reason-text">${suggestion.reason}</div>
-        </div>
+          if (this.activeSession.routineId) {
+            StorageService.swapExerciseInRoutine(this.activeSession.routineId, oldExId, selectedEx.id);
+          }
 
-        ${alternatives.length > 1 ? `
-          <div class="swap-alternatives-section">
-            <div class="swap-alternatives-title">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
-              OU ESCOLHA OUTRO DO CATÁLOGO (${alternatives.length} OPÇÕES)
-            </div>
-            <div class="swap-catalog-grid">
-              ${alternatives.filter(alt => alt.id !== selectedEx.id).map(alt => `
-                <div class="swap-option-card" data-alt-id="${alt.id}">
-                  <div class="swap-option-radio"></div>
-                  <div class="swap-option-details">
-                    <span class="swap-option-name">${alt.name}</span>
-                    <span class="swap-option-equip">${alt.equipment} • ${alt.targetGroup}</span>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        ` : ''}
-
-        <div class="swap-modal-actions">
-          <button class="btn-enter-temple" id="btn-apply-swap" style="padding: 12px; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-            CONFIRMAR SUBSTITUIÇÃO NO TREINO
-          </button>
-          <button class="btn-exercise-guide" id="btn-cancel-swap" style="justify-content: center; padding: 10px;">
-            Manter Exercício Atual
-          </button>
-        </div>
-      `;
-
-      // Seleção entre a sugestão do Oráculo ou os outros cards do catálogo
-      contentEl.querySelectorAll('.swap-option-card').forEach(card => {
-        card.addEventListener('click', () => {
-          sound.playTapSound();
-          contentEl.querySelectorAll('.swap-option-card').forEach(c => c.classList.remove('selected'));
-          card.classList.add('selected');
-          const altId = card.getAttribute('data-alt-id');
-          selectedEx = EXERCISES.find(e => e.id === altId) || selectedEx;
-        });
-      });
-
-      contentEl.querySelector('#btn-cancel-swap').addEventListener('click', close);
-      contentEl.querySelector('#btn-apply-swap').addEventListener('click', () => {
-        const oldExId = currentExItem.exerciseId || exObj.id;
-        currentExItem.exerciseId = selectedEx.id;
-        currentExItem.exerciseName = selectedEx.name;
-        currentExItem.exerciseEquipment = selectedEx.equipment;
-        StorageService.saveActiveSession(this.activeSession);
-
-        if (this.activeSession.routineId) {
-          StorageService.swapExerciseInRoutine(this.activeSession.routineId, oldExId, selectedEx.id);
+          sound.playCheckSound();
+          if ('vibrate' in navigator) navigator.vibrate(60);
+          close();
+          this.renderTreinoView(container);
         }
-
-        sound.playCheckSound();
-        if ('vibrate' in navigator) navigator.vibrate(60);
-        close();
-        this.renderTreinoView(container);
       });
     }).catch(err => {
       console.error(err);
+      if (isClosed) return;
       const contentEl = modalContainer.querySelector('#swap-modal-content');
       if (contentEl) {
         contentEl.innerHTML = `
-          <div style="padding: 20px; text-align: center; color: var(--baby-pink);">
-            Erro ao consultar o Oráculo. Tente novamente mais tarde.
+          <div style="padding: 20px; text-align: center; color: #fca5a5;">
+            Não foi possível consultar o Oráculo agora.
           </div>
           <button class="btn-exercise-guide" id="btn-err-close" style="width: 100%; justify-content: center; padding: 10px;">Fechar</button>
         `;
